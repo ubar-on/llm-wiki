@@ -66,6 +66,16 @@ MARP="${CLAUDE_PLUGIN_DATA}/node_modules/.bin/marp"
 
 ---
 
+## Git
+
+```
+WIKI_GIT="${LLM_WIKI_GIT:-true}"
+```
+
+If `LLM_WIKI_GIT=false` is set in the environment, skip all git commit steps in this skill. Useful when the vault is managed by a cloud sync service (e.g. Google Drive, Dropbox) where running git inside the synced directory causes conflicts. The `log.md` file records every operation regardless.
+
+---
+
 ## `init <name>`
 
 Create a new wiki scaffold under the Obsidian vault.
@@ -94,7 +104,7 @@ Create a new wiki scaffold under the Obsidian vault.
 
 7. Write `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/qmd.yml` using the **qmd.yml template** below.
 
-8. Commit to vault git:
+8. If `WIKI_GIT` is not `false`, commit:
    ```bash
    git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<name>/" && git -C ${VAULT_ROOT} commit -m "init: <name> wiki"
    ```
@@ -149,7 +159,7 @@ Acquire a source and save it to the raw library. Does NOT create wiki pages — 
    Saved <source-type> from <source> to raw/articles/.
    ```
 
-6. **Commit:**
+6. If `WIKI_GIT` is not `false`, **commit:**
    ```bash
    git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "ingest: <title>"
    ```
@@ -201,7 +211,7 @@ Read raw sources and create/update wiki pages with entity extraction and cross-r
    Compiled <source-titles>. Created/updated M pages.
    ```
 
-6. **Commit:**
+6. If `WIKI_GIT` is not `false`, **commit:**
    ```bash
    git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "compile: <summary>"
    ```
@@ -251,7 +261,7 @@ Answer a question using wiki knowledge, with citations.
    Answered question. Referenced N pages. Filed to queries/<slug>.md.
    ```
 
-8. **Commit:**
+8. If `WIKI_GIT` is not `false`, **commit:**
    ```bash
    git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "query: <slug>"
    ```
@@ -308,10 +318,10 @@ Audit wiki integrity and fix issues.
    <summary of issues>
    ```
 
-8. **Commit:**
+8. If `WIKI_GIT` is not `false`, **commit:**
    ```bash
-    git -C ${VAULT_ROOT} commit -am "lint: YYYY-MM-DD"
-    ```
+   git -C ${VAULT_ROOT} commit -am "lint: YYYY-MM-DD"
+   ```
 
 ---
 
@@ -332,10 +342,15 @@ Delete a wiki and all its contents.
    "${QMD}" collection remove <name>
    ```
 
-5. **Remove from git and filesystem:**
-   ```bash
-   git -C ${VAULT_ROOT} rm -rf "${WIKI_SUBDIR}/<name>/" && git -C ${VAULT_ROOT} commit -m "remove: <name> wiki"
-   ```
+5. **Remove from filesystem:**
+   - If `WIKI_GIT` is not `false`:
+     ```bash
+     git -C ${VAULT_ROOT} rm -rf "${WIKI_SUBDIR}/<name>/" && git -C ${VAULT_ROOT} commit -m "remove: <name> wiki"
+     ```
+   - Otherwise:
+     ```bash
+     rm -rf ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/
+     ```
 
 6. **Confirm:** "Wiki '<name>' has been removed."
 
@@ -351,6 +366,7 @@ Handle these failure modes gracefully:
 | **qmd not available** | Fall back to `wiki/index.md` for search. Warn: "qmd unavailable — using index.md fallback." |
 | **Network error on URL ingest** | Retry once. If still failing, report the error and suggest saving content manually to `raw/articles/`. |
 | **Git commit fails** | Warn: "Git commit failed: <error>. Changes are saved but not committed." Continue with remaining steps. |
+| **`LLM_WIKI_GIT=false`** | Skip all git steps silently. `log.md` still records every operation. |
 | **Wiki already exists** (on init) | Abort with message referencing `wiki remove`. |
 | **Raw source too large** (>50KB) | Warn: "Large source detected. Entity extraction may be incomplete. Consider splitting." Proceed anyway. |
 | **log.md missing** | Create fresh log.md from template at topic root. Warn: "log.md was missing — created a new one." |
