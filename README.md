@@ -12,9 +12,19 @@ claude plugin install /path/to/llm-wiki
 
 - **Node.js 18+** — for automatic qmd and Marp installation
 - **Git** — for auto-committing wiki changes
-- **Obsidian vault** at `~/ObsidianVault/` with a `03-Resources/` directory
+- **Obsidian vault** — defaults to `$LLM_WIKI_VAULT/`. Set `LLM_WIKI_VAULT=/your/path` to use a different location (see [Configuration](#configuration))
 
 Dependencies (`qmd`, `marp-cli`) are installed automatically on first session start.
+
+## Configuration
+
+By default, all wikis are stored under `$LLM_WIKI_VAULT/03-Resources/`. To use a different vault location, set the `LLM_WIKI_VAULT` environment variable:
+
+```bash
+export LLM_WIKI_VAULT=/path/to/your/vault
+```
+
+Add this to your shell profile (`.bashrc`, `.zshrc`, etc.) to make it permanent. The plugin will use this path for all operations — `init`, `ingest`, `compile`, `query`, `lint`, and `remove`.
 
 ## Usage
 
@@ -24,12 +34,12 @@ Dependencies (`qmd`, `marp-cli`) are installed automatically on first session st
 /llm-wiki:wiki init my-topic
 ```
 
-Creates `~/ObsidianVault/03-Resources/my-topic/` with the full wiki structure: `raw/`, `wiki/`, `CLAUDE.md` schema, indexes, and git tracking.
+Creates `$LLM_WIKI_VAULT/03-Resources/my-topic/` with the full wiki structure: `raw/`, `wiki/`, `CLAUDE.md` schema, indexes, and git tracking.
 
 ### Ingest a source
 
 ```
-/llm-wiki:wiki ingest ~/ObsidianVault/03-Resources/my-topic/raw/article.md
+/llm-wiki:wiki ingest $LLM_WIKI_VAULT/03-Resources/my-topic/raw/article.md
 /llm-wiki:wiki ingest https://example.com/interesting-article
 ```
 
@@ -39,7 +49,7 @@ Saves the source to `raw/articles/`. Does not create wiki pages — use `compile
 
 ```
 /llm-wiki:wiki compile
-/llm-wiki:wiki compile ~/ObsidianVault/03-Resources/my-topic/raw/articles/2026-04-05-article.md
+/llm-wiki:wiki compile $LLM_WIKI_VAULT/03-Resources/my-topic/raw/articles/2026-04-05-article.md
 ```
 
 Reads uncompiled raw sources, creates/updates wiki pages (source summary, concept pages, person pages), updates the index, and commits.
@@ -71,7 +81,7 @@ Deletes the wiki directory, removes the qmd collection, and commits the deletion
 ## Wiki Structure
 
 ```
-~/ObsidianVault/03-Resources/<wiki-name>/
+$LLM_WIKI_VAULT/03-Resources/<wiki-name>/
 ├── raw/                  ← immutable source drops (never edited by LLM)
 │   ├── articles/         ← text source documents
 │   └── attachments/      ← images
@@ -103,7 +113,7 @@ qmd provides hybrid search (BM25 + vector) over the wiki. It's optional — the 
 claude plugin uninstall llm-wiki
 ```
 
-This removes the plugin and its dependency cache. Your wiki data in `~/ObsidianVault/` is preserved.
+This removes the plugin and its dependency cache. Your wiki data in `${LLM_WIKI_VAULT:-$LLM_WIKI_VAULT}/` is preserved.
 
 ## License
 
