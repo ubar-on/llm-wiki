@@ -15,7 +15,7 @@ Persistent, compounding knowledge base inside an Obsidian vault.
 
 ```
 /llm-wiki:wiki init my-topic
-/llm-wiki:wiki ingest ${VAULT_ROOT}/03-Resources/my-topic/raw/article.md
+/llm-wiki:wiki ingest ${VAULT_ROOT}/${WIKI_SUBDIR}/my-topic/raw/article.md
 /llm-wiki:wiki ingest https://example.com/article
 /llm-wiki:wiki query "What is X?"
 /llm-wiki:wiki lint
@@ -32,7 +32,7 @@ Walk up from `cwd` looking for a directory containing **both** `CLAUDE.md` and a
 3. If not found → move to parent directory and repeat until filesystem root.
 4. If no wiki found anywhere in the path, prompt the user:
    > "Which wiki should I use?"
-   List available wikis by running: `ls -d ${VAULT_ROOT}/03-Resources/*/wiki 2>/dev/null`
+   List available wikis by running: `ls -d ${VAULT_ROOT}/${WIKI_SUBDIR}/*/wiki 2>/dev/null`
    and presenting the parent directory names.
 
 ---
@@ -41,9 +41,10 @@ Walk up from `cwd` looking for a directory containing **both** `CLAUDE.md` and a
 
 ```
 VAULT_ROOT="${LLM_WIKI_VAULT:-$HOME/ObsidianVault}"
+WIKI_SUBDIR="${LLM_WIKI_SUBDIR:-03-Resources}"
 ```
 
-Resolve once at the start of each command. If `LLM_WIKI_VAULT` is set in the environment, use it; otherwise default to `${VAULT_ROOT}`. Use `${VAULT_ROOT}` wherever these instructions reference the vault location.
+Resolve both variables once at the start of each command. `LLM_WIKI_VAULT` sets the Obsidian vault root (default: `~/ObsidianVault`). `LLM_WIKI_SUBDIR` sets the subdirectory within the vault where wikis are stored (default: `03-Resources`). Use `${VAULT_ROOT}` and `${WIKI_SUBDIR}` wherever these instructions reference those paths.
 
 ---
 
@@ -72,35 +73,35 @@ Create a new wiki scaffold under the Obsidian vault.
 ### Steps
 
 1. **Check if wiki already exists:**
-   If `${VAULT_ROOT}/03-Resources/<name>/` exists, abort with:
-   "Wiki '<name>' already exists at ${VAULT_ROOT}/03-Resources/<name>/. Use `wiki remove <name>` first, or choose a different name."
+   If `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/` exists, abort with:
+   "Wiki '<name>' already exists at ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/. Use `wiki remove <name>` first, or choose a different name."
 
 2. Create directory structure:
     ```bash
-    mkdir -p ${VAULT_ROOT}/03-Resources/<name>/raw/articles
-    mkdir -p ${VAULT_ROOT}/03-Resources/<name>/raw/attachments
-    mkdir -p ${VAULT_ROOT}/03-Resources/<name>/wiki/queries
-    mkdir -p ${VAULT_ROOT}/03-Resources/<name>/outputs/reports
+    mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/raw/articles
+    mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/raw/attachments
+    mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/wiki/queries
+    mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/outputs/reports
     ```
 
-3. Write `${VAULT_ROOT}/03-Resources/<name>/CLAUDE.md` using the **CLAUDE.md template** below (fill in `<name>`).
+3. Write `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/CLAUDE.md` using the **CLAUDE.md template** below (fill in `<name>`).
 
-4. Write `${VAULT_ROOT}/03-Resources/<name>/wiki/index.md` using the **index.md template** below.
+4. Write `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/wiki/index.md` using the **index.md template** below.
 
-5. Write `${VAULT_ROOT}/03-Resources/<name>/log.md` using the **log.md template** below.
+5. Write `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/log.md` using the **log.md template** below.
 
-6. Write `${VAULT_ROOT}/03-Resources/<name>/.gitignore` using the **.gitignore template** below.
+6. Write `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/.gitignore` using the **.gitignore template** below.
 
-7. Write `${VAULT_ROOT}/03-Resources/<name>/qmd.yml` using the **qmd.yml template** below.
+7. Write `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/qmd.yml` using the **qmd.yml template** below.
 
 8. Commit to vault git:
    ```bash
-   git -C ${VAULT_ROOT} add "03-Resources/<name>/" && git -C ${VAULT_ROOT} commit -m "init: <name> wiki"
+   git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<name>/" && git -C ${VAULT_ROOT} commit -m "init: <name> wiki"
    ```
 
 9. If qmd available:
    ```bash
-   "${QMD}" collection add ${VAULT_ROOT}/03-Resources/<name>/wiki --name <name> && "${QMD}" embed --collection <name>
+   "${QMD}" collection add ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/wiki --name <name> && "${QMD}" embed --collection <name>
    ```
 
 10. Print Web Clipper setup instruction:
@@ -108,9 +109,9 @@ Create a new wiki scaffold under the Obsidian vault.
      Obsidian Web Clipper setup:
      1. Install: https://obsidian.md/clipper
      2. In clipper settings, set Destination folder to:
-        03-Resources/<name>/raw/articles
+        ${WIKI_SUBDIR}/<name>/raw/articles
      3. Set filename template to: {{date:YYYY-MM-DD}}-{{title}}
-     4. After clipping, run: /llm-wiki:wiki ingest ${VAULT_ROOT}/03-Resources/<name>/raw/articles/<clipped-file>.md
+     4. After clipping, run: /llm-wiki:wiki ingest ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/raw/articles/<clipped-file>.md
      ```
 
 ---
@@ -150,7 +151,7 @@ Acquire a source and save it to the raw library. Does NOT create wiki pages — 
 
 6. **Commit:**
    ```bash
-   git -C ${VAULT_ROOT} add "03-Resources/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "ingest: <title>"
+   git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "ingest: <title>"
    ```
 
 7. **Print:** "Source saved to raw/articles/<filename>. Run `wiki compile` to integrate into the wiki."
@@ -202,7 +203,7 @@ Read raw sources and create/update wiki pages with entity extraction and cross-r
 
 6. **Commit:**
    ```bash
-   git -C ${VAULT_ROOT} add "03-Resources/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "compile: <summary>"
+   git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "compile: <summary>"
    ```
 
 7. **If qmd available:**
@@ -252,7 +253,7 @@ Answer a question using wiki knowledge, with citations.
 
 8. **Commit:**
    ```bash
-   git -C ${VAULT_ROOT} add "03-Resources/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "query: <slug>"
+   git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "query: <slug>"
    ```
 
 ---
@@ -320,7 +321,7 @@ Delete a wiki and all its contents.
 
 ### Steps
 
-1. **Resolve wiki path:** `${VAULT_ROOT}/03-Resources/<name>/`
+1. **Resolve wiki path:** `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/`
 
 2. **Verify it exists.** If not, abort: "Wiki '<name>' does not exist."
 
@@ -333,7 +334,7 @@ Delete a wiki and all its contents.
 
 5. **Remove from git and filesystem:**
    ```bash
-   git -C ${VAULT_ROOT} rm -rf "03-Resources/<name>/" && git -C ${VAULT_ROOT} commit -m "remove: <name> wiki"
+   git -C ${VAULT_ROOT} rm -rf "${WIKI_SUBDIR}/<name>/" && git -C ${VAULT_ROOT} commit -m "remove: <name> wiki"
    ```
 
 6. **Confirm:** "Wiki '<name>' has been removed."
@@ -346,7 +347,7 @@ Handle these failure modes gracefully:
 
 | Situation | Action |
 |-----------|--------|
-| **No active wiki found** | List available wikis in `${VAULT_ROOT}/03-Resources/*/wiki`. Suggest `wiki init <name>` if none exist. |
+| **No active wiki found** | List available wikis in `${VAULT_ROOT}/${WIKI_SUBDIR}/*/wiki`. Suggest `wiki init <name>` if none exist. |
 | **qmd not available** | Fall back to `wiki/index.md` for search. Warn: "qmd unavailable — using index.md fallback." |
 | **Network error on URL ingest** | Retry once. If still failing, report the error and suggest saving content manually to `raw/articles/`. |
 | **Git commit fails** | Warn: "Git commit failed: <error>. Changes are saved but not committed." Continue with remaining steps. |

@@ -18,13 +18,21 @@ Dependencies (`qmd`, `marp-cli`) are installed automatically on first session st
 
 ## Configuration
 
-By default, all wikis are stored under `$LLM_WIKI_VAULT/03-Resources/`. To use a different vault location, set the `LLM_WIKI_VAULT` environment variable:
+Two environment variables control where wikis are stored:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `LLM_WIKI_VAULT` | `~/ObsidianVault` | Obsidian vault root |
+| `LLM_WIKI_SUBDIR` | `$LLM_WIKI_SUBDIR` | Subdirectory within the vault where wikis live |
+
+Wikis are created at `$LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/<name>/`.
 
 ```bash
 export LLM_WIKI_VAULT=/path/to/your/vault
+export LLM_WIKI_SUBDIR=Knowledge          # optional, if you don't use $LLM_WIKI_SUBDIR
 ```
 
-Add this to your shell profile (`.bashrc`, `.zshrc`, etc.) to make it permanent. The plugin will use this path for all operations — `init`, `ingest`, `compile`, `query`, `lint`, and `remove`.
+Add these to your shell profile (`.bashrc`, `.zshrc`, etc.) to make them permanent.
 
 ## Usage
 
@@ -34,12 +42,12 @@ Add this to your shell profile (`.bashrc`, `.zshrc`, etc.) to make it permanent.
 /llm-wiki:wiki init my-topic
 ```
 
-Creates `$LLM_WIKI_VAULT/03-Resources/my-topic/` with the full wiki structure: `raw/`, `wiki/`, `CLAUDE.md` schema, indexes, and git tracking.
+Creates `$LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/my-topic/` with the full wiki structure: `raw/`, `wiki/`, `CLAUDE.md` schema, indexes, and git tracking.
 
 ### Ingest a source
 
 ```
-/llm-wiki:wiki ingest $LLM_WIKI_VAULT/03-Resources/my-topic/raw/article.md
+/llm-wiki:wiki ingest $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/my-topic/raw/article.md
 /llm-wiki:wiki ingest https://example.com/interesting-article
 ```
 
@@ -49,7 +57,7 @@ Saves the source to `raw/articles/`. Does not create wiki pages — use `compile
 
 ```
 /llm-wiki:wiki compile
-/llm-wiki:wiki compile $LLM_WIKI_VAULT/03-Resources/my-topic/raw/articles/2026-04-05-article.md
+/llm-wiki:wiki compile $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/my-topic/raw/articles/2026-04-05-article.md
 ```
 
 Reads uncompiled raw sources, creates/updates wiki pages (source summary, concept pages, person pages), updates the index, and commits.
@@ -81,7 +89,7 @@ Deletes the wiki directory, removes the qmd collection, and commits the deletion
 ## Wiki Structure
 
 ```
-$LLM_WIKI_VAULT/03-Resources/<wiki-name>/
+$LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/<wiki-name>/
 ├── raw/                  ← immutable source drops (never edited by LLM)
 │   ├── articles/         ← text source documents
 │   └── attachments/      ← images
