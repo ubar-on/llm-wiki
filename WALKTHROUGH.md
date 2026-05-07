@@ -42,7 +42,7 @@ Six operations, invoked from a Claude Code session:
 
 ### Wiki structure
 
-Every wiki lives at `$LLM_WIKI_VAULT/${LLM_WIKI_SUBDIR:-03-Resources}/<name>/` (default: `~/ObsidianVault/${LLM_WIKI_SUBDIR:-03-Resources}/<name>/`):
+Every wiki lives at `$LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/<name>/`:
 
 ```
 <name>/
@@ -152,7 +152,7 @@ Verify before installing:
 node --version                        # should be 18+
 git --version                         # should be 2.x
 git config user.name                  # should return your name
-ls ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/
+ls $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/
 ```
 
 ### Install
@@ -201,7 +201,7 @@ Work through these steps in order. Each step builds on the previous one.
 
 **What happens:**
 
-1. Creates `${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki/` with `raw/articles/`, `raw/attachments/`, `wiki/queries/`, and `outputs/reports/`
+1. Creates `$LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/test-wiki/` with `raw/articles/`, `raw/attachments/`, `wiki/queries/`, and `outputs/reports/`
 2. Writes `CLAUDE.md` with the full schema
 3. Writes `wiki/index.md` with an empty catalog template
 4. Writes `log.md` with an empty log template
@@ -213,10 +213,10 @@ Work through these steps in order. Each step builds on the previous one.
 **Verify from terminal:**
 
 ```bash
-ls -la ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki/
-cat ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki/CLAUDE.md
-cat ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki/wiki/index.md
-git -C ${LLM_WIKI_VAULT:-~/ObsidianVault} log --oneline -1
+ls -la $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/test-wiki/
+cat $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/test-wiki/CLAUDE.md
+cat $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/test-wiki/wiki/index.md
+git -C $LLM_WIKI_VAULT log --oneline -1
 ```
 
 **Expected:**
@@ -233,7 +233,7 @@ git -C ${LLM_WIKI_VAULT:-~/ObsidianVault} log --oneline -1
 First, create a test source:
 
 ```bash
-cat > ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki/raw/articles/2026-04-05-test-article.md << 'EOF'
+cat > $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/test-wiki/raw/articles/2026-04-05-test-article.md << 'EOF'
 # The History of Markdown
 
 John Gruber created Markdown in 2004 with contributions from Aaron Swartz.
@@ -245,7 +245,7 @@ EOF
 Then ingest it. Change to the wiki root first so active wiki detection finds it:
 
 ```bash
-cd ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki
+cd $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/test-wiki
 ```
 
 ```
@@ -265,7 +265,7 @@ cd ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki
 ```bash
 ls raw/articles/
 cat log.md
-git -C ${LLM_WIKI_VAULT:-~/ObsidianVault} log --oneline -3
+git -C $LLM_WIKI_VAULT log --oneline -3
 ```
 
 **Expected:**
@@ -299,7 +299,7 @@ git -C ${LLM_WIKI_VAULT:-~/ObsidianVault} log --oneline -3
 ls wiki/
 cat wiki/index.md
 cat log.md
-git -C ${LLM_WIKI_VAULT:-~/ObsidianVault} log --oneline -3
+git -C $LLM_WIKI_VAULT log --oneline -3
 ```
 
 **Expected:**
@@ -349,7 +349,7 @@ This is the primary workflow for building up a wiki from web research: clip or f
 
 ```bash
 cat log.md    # should have a query entry
-git -C ${LLM_WIKI_VAULT:-~/ObsidianVault} log --oneline -3
+git -C $LLM_WIKI_VAULT log --oneline -3
 ```
 
 **Filing answers back:**
@@ -383,7 +383,7 @@ Answers are automatically filed to `wiki/queries/<slug>.md`. Then the plugin off
 ```bash
 cat log.md    # should have a lint entry with issue count
 ls outputs/reports/
-git -C ${LLM_WIKI_VAULT:-~/ObsidianVault} log --oneline -3
+git -C $LLM_WIKI_VAULT log --oneline -3
 ```
 
 After a fresh ingest of one small article, lint will likely find a few orphan pages or missing sections. That's normal and expected.
@@ -392,7 +392,7 @@ After a fresh ingest of one small article, lint will likely find a few orphan pa
 
 ### Step 6: Open in Obsidian
 
-Open Obsidian and navigate to `${LLM_WIKI_SUBDIR:-03-Resources}/test-wiki/`.
+Open Obsidian and navigate to `$LLM_WIKI_SUBDIR/test-wiki/`.
 
 **Graph view:** Open the graph view (Ctrl/Cmd+G). You should see interconnected nodes for each wiki page. Isolated nodes are orphans that lint would flag.
 
@@ -421,7 +421,7 @@ Install the [Obsidian Web Clipper](https://obsidian.md/clipper) browser extensio
 After clipping an article, run:
 
 ```
-/llm-wiki:wiki ingest ${LLM_WIKI_VAULT:-~/ObsidianVault}/${LLM_WIKI_SUBDIR:-03-Resources}/<wiki-name>/raw/<clipped-file>.md
+/llm-wiki:wiki ingest $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/<wiki-name>/raw/<clipped-file>.md
 ```
 
 ### Graph view as a visual lint
@@ -461,7 +461,7 @@ The source-summary template in `CLAUDE.md` includes this instruction as a remind
 
 ### Multiple wikis
 
-Each topic gets its own folder under `${LLM_WIKI_SUBDIR:-03-Resources}/`. Run `init` once per topic:
+Each topic gets its own folder under `$LLM_WIKI_SUBDIR/`. Run `init` once per topic:
 
 ```
 /llm-wiki:wiki init machine-learning
