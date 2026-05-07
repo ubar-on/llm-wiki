@@ -21,7 +21,9 @@ def find_md_files(wiki_dir):
 
 def extract_links(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
-        return WIKILINK_RE.findall(f.read())
+        content = f.read()
+    content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+    return WIKILINK_RE.findall(content)
 
 
 def check_frontmatter_section(filepath, section_name):
