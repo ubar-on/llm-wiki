@@ -11,7 +11,7 @@ claude plugin install /path/to/llm-wiki
 ### Prerequisites
 
 - **Node.js 18+** — for automatic qmd and Marp installation
-- **Git** — for auto-committing wiki changes
+- **Git** — for auto-committing wiki changes. Set `LLM_WIKI_GIT=false` to disable if your vault is managed by a cloud sync service
 - **Obsidian vault** at `~/ObsidianVault/` with a `03-Resources/` directory
 
 Dependencies (`qmd`, `marp-cli`) are installed automatically on first session start.
