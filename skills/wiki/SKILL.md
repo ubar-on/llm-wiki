@@ -259,7 +259,10 @@ Audit wiki integrity and fix issues.
 
 3. **Run deterministic lint script** if available:
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lint-wiki.py" <wiki-root>/wiki/
+   PY=$(command -v python3 2>/dev/null)
+   [ -z "$PY" ] && PY=$(command -v py 2>/dev/null)
+   [ -z "$PY" ] && PY=$(command -v python 2>/dev/null)
+   [ -n "$PY" ] && "${PY}" "${CLAUDE_PLUGIN_ROOT}/scripts/lint-wiki.py" <wiki-root>/wiki/
    ```
 
 4. **Report and fix:**
