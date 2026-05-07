@@ -50,6 +50,18 @@ Resolve both variables once at the start of each command. `LLM_WIKI_VAULT` sets 
 
 ## qmd Availability
 
+If `CLAUDE_PLUGIN_DATA` or `CLAUDE_PLUGIN_ROOT` are not set in the environment (the harness
+does not always inject them), resolve them with these fallbacks before use:
+
+```bash
+if [ -z "${CLAUDE_PLUGIN_DATA}" ]; then
+  CLAUDE_PLUGIN_DATA=$(ls -d ~/.claude/plugins/data/llm-wiki-* 2>/dev/null | head -1)
+fi
+if [ -z "${CLAUDE_PLUGIN_ROOT}" ]; then
+  CLAUDE_PLUGIN_ROOT=$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)
+fi
+```
+
 Reference paths used throughout this skill:
 
 ```
