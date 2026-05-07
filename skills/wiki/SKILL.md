@@ -259,9 +259,13 @@ Audit wiki integrity and fix issues.
 
 3. **Run deterministic lint script** if available:
    ```bash
-   PY=$(command -v python3 2>/dev/null)
-   [ -z "$PY" ] && PY=$(command -v py 2>/dev/null)
-   [ -z "$PY" ] && PY=$(command -v python 2>/dev/null)
+   PY=""
+   for candidate in python3 py python; do
+     if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c "" >/dev/null 2>&1; then
+       PY=$(command -v "$candidate")
+       break
+     fi
+   done
    [ -n "$PY" ] && "${PY}" "${CLAUDE_PLUGIN_ROOT}/scripts/lint-wiki.py" <wiki-root>/wiki/
    ```
 
