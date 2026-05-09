@@ -557,9 +557,10 @@ Drop the PDF into `raw/attachments/` and run ingest:
    ...
    raw/articles/2026-05-09-annual-report-index.md   ← hub article
    ```
-6. Each chapter file has full extracted text and frontmatter with page ranges
-7. If pdfimages is available, inventories images and notes diagram pages
-8. If pdftoppm is available, renders diagram pages as PNG and describes them via vision
+6. Each chapter file has full extracted text and frontmatter including `source-pdf-pages`, `chapter:`, and `chapter-title:`
+7. If a single chapter still exceeds context, it is **sub-split** at section level — multiple files share the same `chapter:` value and each gets a `section-range:` field (e.g. `"8.1-8.3"`) identifying which sections it covers
+8. If pdfimages is available, inventories images and notes diagram pages
+9. If pdftoppm is available, renders diagram pages as PNG and describes them via vision
 
 **Verify:**
 
@@ -664,7 +665,7 @@ Then run `wiki compile` to update only the affected wiki pages.
 
 - **Missing hub article:** flags a `parent-doc` group with no index file — suggests `wiki split`
 - **Missing hub wiki page:** hub article compiled but `wiki/<name>.md` not yet created
-- **Chapter gaps:** detects non-contiguous chapter numbering
+- **Chapter gaps:** checks the set of distinct `chapter:` values for missing numbers; multiple files sharing the same `chapter:` value are recognised as sub-splits (not gaps). Also checks `section-range:` contiguity within each sub-split chapter.
 - **Stuck uncompiled sources:** chapter files with `compiled: false` older than 7 days
 - **Image-set stubs:** extracted images that were never described
 - **Page range overlaps:** detects duplicated or missing page ranges across chapters
