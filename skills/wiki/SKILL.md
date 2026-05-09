@@ -48,33 +48,33 @@ Resolve both variables once at the start of each command. `LLM_WIKI_VAULT` sets 
 
 ---
 
-## qmd Availability
+## Pre-flight Setup
 
-If `CLAUDE_PLUGIN_DATA` or `CLAUDE_PLUGIN_ROOT` are not set in the environment (the harness
-does not always inject them), resolve them with these fallbacks before use:
+**Run this procedure at the start of every operation — no exceptions.**
 
 ```bash
+# 1. Resolve plugin paths (use fallbacks if env vars not injected by harness)
 if [ -z "${CLAUDE_PLUGIN_DATA}" ]; then
   CLAUDE_PLUGIN_DATA=$(ls -d ~/.claude/plugins/data/llm-wiki-* 2>/dev/null | head -1)
 fi
 if [ -z "${CLAUDE_PLUGIN_ROOT}" ]; then
   CLAUDE_PLUGIN_ROOT=$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)
 fi
-```
 
-Reference paths used throughout this skill:
-
-```
+# 2. Define tool paths
 QMD="env -u BUN_INSTALL ${CLAUDE_PLUGIN_DATA}/node_modules/.bin/qmd"
 MARP="${CLAUDE_PLUGIN_DATA}/node_modules/.bin/marp"
+
+# 3. Check qmd availability — sets QMD_AVAILABLE for all subsequent steps
+if test -x "${CLAUDE_PLUGIN_DATA}/node_modules/.bin/qmd"; then
+  QMD_AVAILABLE=true
+else
+  QMD_AVAILABLE=false
+  echo "[WARN] qmd not found — falling back to index.md search. Semantic query quality will be reduced."
+fi
 ```
 
-**Check:** Test if `"${CLAUDE_PLUGIN_DATA}/node_modules/.bin/qmd"` exists and is executable via Bash: `test -x "${CLAUDE_PLUGIN_DATA}/node_modules/.bin/qmd"`.
-
-**Important:** Always invoke qmd via `env -u BUN_INSTALL` to force Node.js runtime. If `BUN_INSTALL` is set in the environment, qmd runs under Bun, which uses a SQLite build without extension loading support and cannot load sqlite-vec.
-
-- **If present:** use it for `query` and `embed` operations. ALWAYS use the full path — never bare `qmd`.
-- **If absent:** fall back to reading `wiki/index.md` manually and grepping wiki files.
+**Important:** Always invoke qmd via `env -u BUN_INSTALL` to force Node.js runtime. If `BUN_INSTALL` is set in the environment, qmd runs under Bun, which uses a SQLite build without extension loading support and cannot load sqlite-vec. ALWAYS use the full `${QMD}` path — never bare `qmd`.
 
 ---
 
@@ -127,6 +127,8 @@ Create a new wiki scaffold under the Obsidian vault.
 
 ### Steps
 
+0. **Run Pre-flight Setup** (see Pre-flight Setup section). Sets `QMD_AVAILABLE`, `QMD`, and `MARP`.
+
 1. **Check if wiki already exists:**
    If `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/` exists, abort with:
    "Wiki '<name>' already exists at ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/. Use `wiki remove <name>` first, or choose a different name."
@@ -176,6 +178,8 @@ Create a new wiki scaffold under the Obsidian vault.
 Acquire a source and save it to the raw library. Does NOT create wiki pages — use `compile` for that.
 
 ### Steps
+
+0. **Run Pre-flight Setup** (see Pre-flight Setup section). Sets `QMD_AVAILABLE`, `QMD`, and `MARP`.
 
 1. **Detect active wiki** (see Active Wiki Detection). Read `CLAUDE.md` for schema.
 
@@ -398,6 +402,8 @@ Read raw sources and create/update wiki pages with entity extraction and cross-r
 
 ### Steps
 
+0. **Run Pre-flight Setup** (see Pre-flight Setup section). Sets `QMD_AVAILABLE`, `QMD`, and `MARP`.
+
 1. **Detect active wiki.** Read `CLAUDE.md` for schema and templates.
 
 2. **Identify sources to compile:**
@@ -452,10 +458,11 @@ Read raw sources and create/update wiki pages with entity extraction and cross-r
    git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "compile: <summary>"
    ```
 
-7. **If qmd available:**
+7. **Sync embeddings** (mandatory when `QMD_AVAILABLE=true` — do not skip):
    ```bash
    "${QMD}" embed --collection <name>
    ```
+   `qmd embed` is idempotent: unchanged pages are skipped automatically. Skipping this step leaves the query index stale for any subsequent `wiki query`.
 
 ---
 
@@ -465,15 +472,23 @@ Answer a question using wiki knowledge, with citations.
 
 ### Steps
 
+0. **Run Pre-flight Setup** (see Pre-flight Setup section). Sets `QMD_AVAILABLE`, `QMD`, and `MARP`.
+
 1. **Detect active wiki.** Read `CLAUDE.md`.
 
 2. **Find relevant pages:**
-   - If qmd available:
-     ```bash
-     "${QMD}" query "<question>" --collection <name>
-     ```
-     Parse output for candidate page paths.
-   - Otherwise: read `wiki/index.md` and identify relevant pages by title/description matching.
+   - If `QMD_AVAILABLE=true`:
+     a. Ensure embeddings are current (idempotent — safe to always run before querying):
+        ```bash
+        "${QMD}" embed --collection <name>
+        ```
+     b. Run semantic search:
+        ```bash
+        "${QMD}" query "<question>" --collection <name>
+        ```
+        Parse output for candidate page paths.
+   - If `QMD_AVAILABLE=false` **only**: the Pre-flight Setup warning has already been emitted. Read `wiki/index.md` and identify relevant pages by title/description matching.
+   **Do NOT use the index.md fallback when `QMD_AVAILABLE=true`.**
 
 3. **Read all relevant pages.**
    - If any candidate page has a `parent-doc` frontmatter field, first read the hub wiki page (`wiki/<parent-doc>.md`) to establish document-level context.
@@ -512,6 +527,8 @@ Answer a question using wiki knowledge, with citations.
 Audit wiki integrity and fix issues.
 
 ### Steps
+
+0. **Run Pre-flight Setup** (see Pre-flight Setup section). Sets `QMD_AVAILABLE`, `QMD`, and `MARP`.
 
 1. **Read all files** in `wiki/`.
 
@@ -583,6 +600,8 @@ Audit wiki integrity and fix issues.
 Delete a wiki and all its contents.
 
 ### Steps
+
+0. **Run Pre-flight Setup** (see Pre-flight Setup section). Sets `QMD_AVAILABLE`, `QMD`, and `MARP`.
 
 1. **Resolve wiki path:** `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/`
 
