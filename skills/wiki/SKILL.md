@@ -4,7 +4,7 @@ description: >-
   LLM Wiki — persistent, compounding knowledge base inside Obsidian.
   Use when the user says "/llm-wiki:wiki", "wiki init", "wiki ingest",
   "wiki query", "wiki lint", or asks about managing a knowledge base wiki.
-argument-hint: init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | remove <name>
+argument-hint: init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name>
 ---
 
 # LLM Wiki
@@ -52,6 +52,39 @@ MARP="${CLAUDE_PLUGIN_DATA}/node_modules/.bin/marp"
 
 - **If present:** use it for `query` and `embed` operations. ALWAYS use the full path — never bare `qmd`.
 - **If absent:** fall back to reading `wiki/index.md` manually and grepping wiki files.
+
+---
+
+## Toolchain Detection
+
+Run once at the start of any large-document operation. Set capability flags used throughout the large-document path:
+
+```bash
+HAS_PDFTOTEXT=$(command -v pdftotext >/dev/null 2>&1 && echo true || echo false)
+HAS_PDFIMAGES=$(command -v pdfimages >/dev/null 2>&1 && echo true || echo false)
+HAS_PDFTOPPM=$(command -v pdftoppm  >/dev/null 2>&1 && echo true || echo false)
+HAS_PANDOC=$(command -v pandoc      >/dev/null 2>&1 && echo true || echo false)
+```
+
+Capability tiers — the skill uses whatever is available and logs what was skipped:
+
+| Tier | Tools required | Capabilities unlocked |
+|------|---------------|----------------------|
+| 0 — baseline | pdftotext | Text extraction, TOC parsing, chapter splitting |
+| 1 — image inventory | + pdfimages | Enumerate images per page; detect diagram pages |
+| 2 — page rendering | + pdftoppm | Render pages as PNG for vision-based diagram description |
+| 3 — full | + pandoc | Word (.docx), EPUB, and PowerPoint (.pptx) processing |
+
+**One-time setup message:** On first large-document ingest on a given machine, check for the sentinel file `<wiki-root>/.pdf-toolchain-checked`. If absent, print installation instructions for the detected platform and write the sentinel. Do not repeat the message on subsequent runs.
+
+Platform-specific instructions to print:
+```
+To unlock full large-document support, install:
+  Windows (winget):  winget install -e --id oschwartz10612.Poppler
+                     winget install -e --id JohnMacFarlane.Pandoc
+  macOS (brew):      brew install poppler pandoc
+  Linux (apt):       sudo apt install poppler-utils pandoc
+```
 
 ---
 
@@ -118,6 +151,92 @@ Acquire a source and save it to the raw library. Does NOT create wiki pages — 
    - If input is a **file path**: read the file directly.
    - If the source file is in `raw/` directly (not in a subdirectory), read it from there. Sources saved before the `raw/articles/` convention are still valid.
 
+2b. **Detect format and check size threshold:**
+
+   Resolve the split threshold:
+   ```bash
+   LLM_WIKI_SPLIT_THRESHOLD="${LLM_WIKI_SPLIT_THRESHOLD:-204800}"  # 200 KB extracted text
+   ```
+
+   Detect format from file extension:
+   ```
+   .pdf  → PROCESSOR=pdf
+   .docx → PROCESSOR=docx
+   .pptx → PROCESSOR=pptx
+   .epub → PROCESSOR=epub
+   .md / .txt → PROCESSOR=text
+   other → PROCESSOR=unknown
+   ```
+
+   For file-path sources, check if the extracted (or raw) text size exceeds `LLM_WIKI_SPLIT_THRESHOLD`. If yes, activate **chapter-split mode** (steps 2c–2g below). Otherwise continue to step 3 as normal.
+
+2c. **Chapter-split mode — toolchain detection:** Run the Toolchain Detection checks above. Print the one-time setup message if `.pdf-toolchain-checked` is absent.
+
+2d. **Chapter-split mode — extract text and detect boundaries:**
+
+   For `PROCESSOR=pdf` (requires pdftotext):
+   - Run `pdftotext <source-file> -` to extract full text.
+   - **Pass 1 (TOC-based):** Look for a table-of-contents page — a dense run of `section-number … page-number` lines. Parse chapter headings and start pages from the TOC.
+   - **Pass 2 (heading fallback):** If no TOC detected, scan text for all-caps lines or numbered section headers (`1.`, `CHAPTER 1`, etc.) to infer boundaries.
+   - Build a chapter manifest: `[{chapter_num, title, start_page, end_page}]`.
+
+   For `PROCESSOR=docx` or `PROCESSOR=epub` (requires pandoc):
+   - Run `pandoc <source-file> --to=markdown` to convert to markdown.
+   - Split at Heading 1 boundaries.
+
+   For `PROCESSOR=pptx` (requires pandoc):
+   - Run `pandoc <source-file> --to=markdown`.
+   - Split at named slide section boundaries; fall back to groups of N slides.
+
+   For `PROCESSOR=text`:
+   - Split at H1/H2 headings; fall back to token-count chunks (~6000 words each).
+
+2e. **Chapter-split mode — write per-chapter article files:**
+
+   For each chapter, write `raw/articles/YYYY-MM-DD-<parent-slug>-ch<N>-<chapter-slug>.md`:
+   ```yaml
+   ---
+   date: YYYY-MM-DD
+   source-type: paper
+   source-url: <original file path>
+   source-pdf-pages: <start>-<end>        # PDF only
+   parent-doc: <parent-slug>
+   chapter: "<N>"
+   chapter-title: <chapter title>
+   title: "<Doc Title> — Ch.<N>: <chapter title>"
+   compiled: false
+   ---
+   <full extracted text of this chapter>
+   ```
+
+   Also write a **hub article** `raw/articles/YYYY-MM-DD-<parent-slug>-index.md`:
+   ```yaml
+   ---
+   date: YYYY-MM-DD
+   source-type: paper-index
+   source-url: <original file path>
+   parent-doc: <parent-slug>
+   title: "<Doc Title> — Index"
+   compiled: false
+   ---
+   ```
+   Body: document title, classification, brief description, list of chapter article filenames.
+
+2f. **Chapter-split mode — image extraction (Tier 1+):**
+
+   If `HAS_PDFIMAGES=true`:
+   - Run `pdfimages -list <source-file>` to inventory images per page.
+   - For pages with large images (likely diagrams), note the page number in the corresponding chapter article frontmatter as a comment: `<!-- diagram-pages: 12, 34 -->`.
+
+   If `HAS_PDFTOPPM=true` (Tier 2):
+   - For each flagged diagram page, render as PNG: `pdftoppm -r 150 -png -f <page> -l <page> <source-file> <output-prefix>`.
+   - Save rendered images to `raw/attachments/<parent-slug>-images/page-<NNN>.png`.
+   - Use Claude vision to describe each diagram and write `raw/articles/YYYY-MM-DD-<parent-slug>-diagram-p<NNN>.md` with `source-type: image-set` and the description as body.
+
+   If tools missing: log `[WARN] pdfimages/pdftoppm not found — image extraction skipped.`
+
+2g. **Chapter-split mode — complete.** Skip steps 3–4 (article file already written). Continue from step 5.
+
 3. **Classify** the source as one of: `article` | `paper` | `transcript` | `conversation` | `image-set`.
 
 4. **Save to raw library:** Write to `raw/articles/YYYY-MM-DD-<slug>.md` with frontmatter:
@@ -147,6 +266,93 @@ Acquire a source and save it to the raw library. Does NOT create wiki pages — 
 
 ---
 
+## `split <path|name>`
+
+Retroactively apply chapter-splitting to a document that was already ingested as a single article file. Use this when a large document was ingested before chapter-split mode was available, or when you want to re-split with updated boundaries.
+
+`<path>` may be a path to a specific raw article file, or a `parent-doc` slug name.
+
+### Steps
+
+1. **Detect active wiki.** Read `CLAUDE.md`.
+
+2. **Resolve target article:**
+   - If `<path>` is a file path: use it directly.
+   - If `<path>` is a name: find `raw/articles/*-<name>*.md` or `raw/articles/*-<name>-index.md`.
+
+3. **Read target article.** Extract `source-url` from frontmatter to locate the original file in `raw/attachments/`.
+
+4. **Verify original file exists** at `source-url`. If not, abort: "Original source file not found at <source-url>. Cannot split."
+
+5. **Run toolchain detection** (see Toolchain Detection section).
+
+6. **Run chapter boundary detection** (same as ingest step 2d) on the original file.
+
+7. **Write per-chapter article files** (same as ingest step 2e) with `compiled: false`.
+
+8. **Write hub article** if not already present.
+
+9. **Run image extraction** (same as ingest step 2f) if tools available.
+
+10. **Archive original single-file article** to `raw/articles/archive/<original-filename>`. Create `raw/articles/archive/` if needed.
+
+11. **Append to `log.md`:**
+    ```
+    ## [YYYY-MM-DD] split | <parent-doc>
+    Split into N chapter articles. Original archived to raw/articles/archive/.
+    ```
+
+12. If `WIKI_GIT` is not `false`, **commit:**
+    ```bash
+    git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "split: <parent-doc>"
+    ```
+
+13. **Print:** "Split into N chapter articles. Run `wiki compile` to integrate into the wiki."
+
+---
+
+## `update <name>`
+
+Re-ingest a revised edition of a document that was previously split into chapter articles. Only chapters with changed revision dates are re-ingested; unchanged chapters are left as-is.
+
+`<name>` is the `parent-doc` slug of the existing document set.
+
+### Steps
+
+1. **Detect active wiki.** Read `CLAUDE.md`.
+
+2. **Prompt for new source file path** (or accept as second argument if provided): "Path to the new edition of <name>?"
+
+3. **Run toolchain detection.**
+
+4. **Extract TOC and chapter manifest** from the new file (same as ingest step 2d).
+
+5. **Compare against existing chapter articles:** For each chapter in the manifest, find the matching chapter article by `chapter:` frontmatter. Compare chapter revision date (from TOC) against the article's `date:` field.
+
+6. **Re-ingest changed chapters only:**
+   - Archive the old chapter article to `raw/articles/archive/`.
+   - Write a new chapter article with updated content and `compiled: false`.
+   - Log: "Chapter <N> updated."
+
+7. **Report unchanged chapters:** "Chapters X, Y, Z unchanged — skipped."
+
+8. **Update hub article** with new edition metadata (date, source-url).
+
+9. **Append to `log.md`:**
+   ```
+   ## [YYYY-MM-DD] update | <name>
+   New edition ingested. N chapters updated, M unchanged.
+   ```
+
+10. If `WIKI_GIT` is not `false`, **commit:**
+    ```bash
+    git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "update: <name>"
+    ```
+
+11. **Print:** "N chapters updated. Run `wiki compile` to integrate changes into the wiki."
+
+---
+
 ## `compile [<path>]`
 
 Read raw sources and create/update wiki pages with entity extraction and cross-references.
@@ -163,24 +369,39 @@ Read raw sources and create/update wiki pages with entity extraction and cross-r
    - Otherwise: list files in `raw/articles/`. For each, check if a corresponding source-summary page exists in `wiki/` (match by slug or title). Compile any source without a matching summary.
    - If nothing to compile: "All sources are already compiled. Nothing to do." Stop.
 
-3. **For each source to compile:**
+2b. **Detect grouped compile:** Check whether the identified sources include any files with a `parent-doc` frontmatter field. Group them by `parent-doc` value. Process each group together (steps 3–3d below), then process non-grouped sources individually.
 
-   a. Read the raw source content.
+3. **For each source (or grouped set) to compile:**
 
-   b. **Write or update source-summary page** in `wiki/` using the `source-summary` template from `CLAUDE.md`. Filename: `<slug>.md`.
+   a. **For grouped sets (chapter articles sharing a `parent-doc`):**
+      - Read the hub article (`raw/articles/*-<parent-doc>-index.md`) first to establish document-level context.
+      - Process chapters in order (`chapter:` field ascending).
+      - Maintain a **shared entity accumulator** across all chapters: a running list of all entity pages created or updated during this group's compile. Use it to resolve cross-chapter references within the group.
 
-   c. **Entity extraction:** For each mentioned entity (person, concept, event):
+   b. Read the raw source content.
+
+   c. **Write or update source-summary page** in `wiki/` using the `source-summary` template from `CLAUDE.md`. Filename: `<slug>.md`.
+
+   d. **Entity extraction:** For each mentioned entity (person, concept, event):
       - Check if a page already exists in `wiki/`.
       - If yes → update with new information, preserving existing content.
       - If no → create using the appropriate template (`concept.md` or `person.md`).
       - Add `[[wikilinks]]` to related pages in both directions.
 
-   d. **Backlink audit** (CRITICAL — do not skip):
+   e. **Backlink audit** (CRITICAL — do not skip):
       ```bash
       grep -rln "<new page title>" wiki/
       ```
       For each file that mentions the new page title but does NOT contain `[[new-page-name]]`:
       add a `[[wikilink]]` at the first mention.
+
+3b. **Cross-chapter entity merge (grouped sets only):**
+   After all chapters in a group are compiled, run a group-level backlink audit:
+   - For each entity page created during this group's compile, grep all wiki pages (not just the current chapter's pages) for plain-text mentions.
+   - Add `[[wikilinks]]` at first mention in any page that references the entity without a link.
+
+3c. **Write or update hub wiki page (grouped sets only):**
+   Create (or update) `wiki/<parent-doc>.md` as a concept page listing all chapter wiki pages and source-summary pages generated from this group. This page becomes the primary entry point for queries about this document.
 
 4. **Update `wiki/index.md`** with new/updated entries under the appropriate domain heading.
 
@@ -218,7 +439,10 @@ Answer a question using wiki knowledge, with citations.
      Parse output for candidate page paths.
    - Otherwise: read `wiki/index.md` and identify relevant pages by title/description matching.
 
-3. **Read all relevant pages.** Follow one level of `[[wikilinks]]` if targets look relevant to the question.
+3. **Read all relevant pages.**
+   - If any candidate page has a `parent-doc` frontmatter field, first read the hub wiki page (`wiki/<parent-doc>.md`) to establish document-level context.
+   - Then read the specific candidate pages.
+   - Follow one level of `[[wikilinks]]` if targets look relevant to the question.
 
 4. **Synthesize answer** with `[[wikilinks]]` as citations. Format rules:
    - **Default:** prose with inline wikilink citations.
@@ -273,10 +497,17 @@ Audit wiki integrity and fix issues.
    | **Missing "Counter-Arguments and Gaps" sections** | Add empty `## Counter-Arguments and Gaps` section. |
    | **Stale pages** | Flag pages with `status: stale` in frontmatter. |
    | **Index drift** | Compare `index.md` entries vs actual files. Add missing, remove dead. |
+   | **Missing hub article** | A `parent-doc` group exists in `raw/articles/` but no `*-index.md` hub article. Suggest `wiki split <name>`. |
+   | **Missing hub wiki page** | A hub article (`source-type: paper-index`) exists in `raw/articles/` but `wiki/<parent-doc>.md` does not exist. Flag as uncompiled hub. |
+   | **Chapter sequence gaps** | Parse `chapter:` frontmatter across each `parent-doc` group; flag non-contiguous sequences (e.g. ch1, ch2, ch4 — ch3 missing). |
+   | **Stuck uncompiled sources** | Article files with `compiled: false` older than 7 days. List them and suggest `wiki compile`. |
+   | **Image-set stubs** | `source-type: image-set` articles with no body content — image extracted but never described. |
+   | **Page range overlaps** | Within a `parent-doc` group, check that `source-pdf-pages` ranges are contiguous and non-overlapping. |
 
 5. **Suggest growth opportunities:** Based on the wiki's current content and the gaps found in step 4, generate:
    - 3-5 questions the wiki cannot yet answer well (candidates for `wiki query`)
    - 2-3 topic areas or sources that would most strengthen the wiki
+   - If any `parent-doc` group has fewer than 50% of its chapter articles compiled, flag it: "Document '<name>' is partially compiled — consider running `wiki compile`."
 
 6. **Write lint report** to `outputs/reports/YYYY-MM-DD-lint.md`:
    ```markdown
@@ -341,7 +572,15 @@ Handle these failure modes gracefully:
 | **Network error on URL ingest** | Retry once. If still failing, report the error and suggest saving content manually to `raw/articles/`. |
 | **Git commit fails** | Warn: "Git commit failed: <error>. Changes are saved but not committed." Continue with remaining steps. |
 | **Wiki already exists** (on init) | Abort with message referencing `wiki remove`. |
-| **Raw source too large** (>50KB) | Warn: "Large source detected. Entity extraction may be incomplete. Consider splitting." Proceed anyway. |
+| **Raw source too large** (>50KB, below split threshold) | Warn: "Large source detected. Entity extraction may be incomplete. Consider splitting." Proceed anyway. |
+| **Source exceeds split threshold** | Activate chapter-split mode automatically. Warn if pdftotext unavailable for PDF sources. |
+| **TOC not detected in PDF** | Fall back to heading-based boundary detection. Warn: "No TOC detected — using heading scan for chapter boundaries." |
+| **Chapter too large** (single chapter still exceeds context) | Sub-split at section level (next heading depth). Log: "Chapter <N> sub-split into M sections." |
+| **pdftotext unavailable for PDF** | Abort large-document path. Warn: "pdftotext required for PDF processing. Install Poppler." Fall back to single-file ingest. |
+| **pdfimages / pdftoppm unavailable** | Skip image extraction silently. Log: "[WARN] Image extraction skipped — pdfimages/pdftoppm not found." |
+| **pandoc unavailable for docx/pptx/epub** | Abort large-document path for those formats. Warn: "pandoc required for .docx/.pptx/.epub processing. Install pandoc." |
+| **Original file missing on split** | Abort: "Original source file not found at <source-url>. Cannot split." |
+| **No changed chapters on update** | Report: "All chapters up to date. Nothing to update." Stop. |
 | **log.md missing** | Create fresh log.md from template at topic root. Warn: "log.md was missing — created a new one." |
 | **No uncompiled sources** (on compile) | Report: "All sources are already compiled. Nothing to do." Stop. |
 | **qmd collection not found** | Warn and continue without search indexing. |
@@ -449,7 +688,7 @@ Append to log.md after every operation. Format:
   ## [YYYY-MM-DD] <operation> | <title>
   <one-line description>
 
-Operations: ingest | compile | query | lint | promote | remove
+Operations: ingest | compile | query | lint | promote | split | update | remove
 
 ## Index Format
 wiki/index.md is a human- and LLM-readable catalog. Format:
@@ -497,6 +736,28 @@ Scan all pages in wiki/ and report:
 - Missing Counter-Arguments and Gaps section
 - Index entries pointing to missing files
 After fixing, append to log.md and commit.
+```
+
+### paper-index.md (hub article for split documents)
+
+```markdown
+---
+date: YYYY-MM-DD
+source-type: paper-index
+source-url: <original file path>
+parent-doc: <parent-slug>
+title: "<Doc Title> — Index"
+compiled: false
+---
+# <Doc Title>
+
+<Brief description of the document — type, publisher, date, purpose.>
+
+## Chapters
+
+- [[<parent-slug>-ch01-<slug>]] — <chapter title>
+- [[<parent-slug>-ch02-<slug>]] — <chapter title>
+...
 ```
 
 ### .gitignore

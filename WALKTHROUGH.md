@@ -30,10 +30,12 @@ Six operations, invoked from a Claude Code session:
 | Operation | What it does |
 |-----------|-------------|
 | `init <name>` | Scaffolds a new wiki with directory structure, schema, and git tracking |
-| `ingest <path\|url>` | Saves a source to raw/articles/. Does not create wiki pages. |
+| `ingest <path\|url>` | Saves a source to raw/articles/. Large documents are split into chapter files automatically. |
 | `compile [<path>]` | Reads raw sources, creates/updates wiki pages with entity extraction |
 | `query <question>` | Searches the wiki, synthesizes an answer with wikilink citations |
-| `lint` | Audits for dead links, orphans, missing sections, index drift |
+| `lint` | Audits for dead links, orphans, missing sections, index drift, and large-document integrity |
+| `split <path\|name>` | Retroactively splits a single-file ingest into per-chapter article files |
+| `update <name>` | Re-ingests a revised edition of a document; only changed chapters are re-processed |
 | `remove <name>` | Deletes a wiki and all its contents |
 
 ---
@@ -168,7 +170,7 @@ In a Claude Code session, `/llm-wiki:wiki` should appear in the skill list. Try:
 /llm-wiki:wiki
 ```
 
-You should see the argument hint: `init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | remove <name>`.
+You should see the argument hint: `init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name>`.
 
 ### Dependencies
 
@@ -499,7 +501,177 @@ Use promotion when a query synthesizes something genuinely new that isn't captur
 
 ---
 
-## Part 7: Cleanup
+## Part 7: Working with Large Documents
+
+This section covers PDFs, Word documents, and other large files that exceed a single LLM context window.
+
+---
+
+### Toolchain setup
+
+Before ingesting large documents, install the optional toolchain to unlock all capabilities:
+
+```bash
+# Windows
+winget install -e --id oschwartz10612.Poppler
+winget install -e --id JohnMacFarlane.Pandoc
+
+# macOS
+brew install poppler pandoc
+
+# Linux
+sudo apt install poppler-utils pandoc
+```
+
+Verify:
+
+```bash
+pdftotext --version   # Poppler text extraction
+pdfimages --version   # Poppler image inventory
+pdftoppm --version    # Poppler page rendering
+pandoc --version      # Word / EPUB / PPTX conversion
+```
+
+Without these tools, ingest still works — the plugin falls back to a single-file summary and tells you exactly what was skipped.
+
+---
+
+### Ingesting a large PDF
+
+Drop the PDF into `raw/attachments/` and run ingest:
+
+```
+/llm-wiki:wiki ingest ~/ObsidianVault/03-Resources/my-wiki/raw/attachments/annual-report.pdf
+```
+
+**What happens in chapter-split mode:**
+
+1. Detects file exceeds the size threshold (default 200 KB of extracted text)
+2. Runs toolchain detection; prints one-time setup message if tools are incomplete
+3. Extracts full text with `pdftotext`
+4. Parses the table of contents for chapter boundaries; falls back to heading scan if no TOC
+5. Writes one article file per chapter to `raw/articles/`:
+   ```
+   raw/articles/2026-05-09-annual-report-ch01-overview.md
+   raw/articles/2026-05-09-annual-report-ch02-financials.md
+   ...
+   raw/articles/2026-05-09-annual-report-index.md   ← hub article
+   ```
+6. Each chapter file has full extracted text and frontmatter with page ranges
+7. If pdfimages is available, inventories images and notes diagram pages
+8. If pdftoppm is available, renders diagram pages as PNG and describes them via vision
+
+**Verify:**
+
+```bash
+ls raw/articles/  # should show N chapter files + 1 index file
+cat raw/articles/2026-05-09-annual-report-index.md
+cat log.md
+```
+
+---
+
+### Compiling a chapter group
+
+```
+/llm-wiki:wiki compile
+```
+
+The compiler detects that the chapter articles share a `parent-doc` value and activates grouped compile mode:
+
+1. Reads the hub article first to establish document context
+2. Processes chapters in order, maintaining a shared entity accumulator
+3. After all chapters: runs a group-level backlink audit across the full wiki
+4. Creates `wiki/annual-report.md` — a hub wiki page linking all chapter wiki pages
+
+To compile a single chapter (useful for testing):
+
+```
+/llm-wiki:wiki compile raw/articles/2026-05-09-annual-report-ch02-financials.md
+```
+
+**Verify:**
+
+```bash
+ls wiki/         # should show hub page + chapter pages + entity pages
+cat wiki/annual-report.md
+cat log.md
+```
+
+---
+
+### Querying a large document
+
+```
+/llm-wiki:wiki query "What are the key financial risks identified in the annual report?"
+```
+
+The query operation detects that candidate pages have a `parent-doc` field and loads the hub wiki page first for document-level context, then reads the relevant chapter pages.
+
+This means answers are grounded in the full document structure, not just the most similar paragraph.
+
+---
+
+### Retroactive splitting
+
+If you ingested a large document before chapter-split mode was available (or before the toolchain was installed), use `split` to reprocess it:
+
+```
+/llm-wiki:wiki split raw/articles/2026-04-01-old-report.md
+# or by parent-doc name:
+/llm-wiki:wiki split old-report
+```
+
+**What happens:**
+
+1. Reads the existing article file and extracts `source-url`
+2. Locates the original file in `raw/attachments/`
+3. Runs chapter boundary detection on the original
+4. Writes per-chapter article files
+5. Archives the original single-file article to `raw/articles/archive/`
+6. Logs and commits
+
+Then run `wiki compile` to integrate.
+
+---
+
+### Handling document revisions
+
+When a new edition of a document arrives (e.g. a quarterly report update):
+
+```
+/llm-wiki:wiki update annual-report
+```
+
+The plugin will prompt: "Path to the new edition of annual-report?"
+
+Provide the path to the new PDF. It compares chapter revision dates in the new TOC against existing chapter articles and re-ingests only the changed chapters. Unchanged chapters are left as-is.
+
+```
+Chapter 1 (Overview): unchanged — skipped
+Chapter 2 (Financials): updated — re-ingested
+Chapter 3 (Risk): updated — re-ingested
+Chapter 4 (Outlook): unchanged — skipped
+```
+
+Then run `wiki compile` to update only the affected wiki pages.
+
+---
+
+### Large-document lint checks
+
+`wiki lint` includes additional checks for large-document artifacts:
+
+- **Missing hub article:** flags a `parent-doc` group with no index file — suggests `wiki split`
+- **Missing hub wiki page:** hub article compiled but `wiki/<name>.md` not yet created
+- **Chapter gaps:** detects non-contiguous chapter numbering
+- **Stuck uncompiled sources:** chapter files with `compiled: false` older than 7 days
+- **Image-set stubs:** extracted images that were never described
+- **Page range overlaps:** detects duplicated or missing page ranges across chapters
+
+---
+
+## Part 8: Cleanup
 
 After testing, remove the test wiki:
 
@@ -511,7 +683,7 @@ Your real wikis are unaffected. The plugin itself stays installed.
 
 ---
 
-## Part 8: Troubleshooting
+## Part 9: Troubleshooting
 
 | Problem | Cause | Fix |
 |---------|-------|-----|

@@ -16,6 +16,17 @@ claude plugin install /path/to/llm-wiki
 
 Dependencies (`qmd`, `marp-cli`) are installed automatically on first session start.
 
+### Optional: large-document toolchain
+
+For ingesting large PDFs, Word documents, EPUB files, and PowerPoint decks, install:
+
+| Tool | Unlocks | Install |
+|------|---------|---------|
+| **Poppler** (`pdftotext`, `pdfimages`, `pdftoppm`) | PDF chapter-splitting, image extraction, diagram rendering | `winget install -e --id oschwartz10612.Poppler` (Windows) · `brew install poppler` (macOS) · `apt install poppler-utils` (Linux) |
+| **pandoc** | Word (.docx), EPUB, PowerPoint (.pptx) processing | `winget install -e --id JohnMacFarlane.Pandoc` (Windows) · `brew install pandoc` (macOS) · `apt install pandoc` (Linux) |
+
+Without these tools, large documents are still ingested as a single summary file. The plugin degrades gracefully and tells you exactly what was skipped.
+
 ## Usage
 
 ### Initialize a new wiki
@@ -31,9 +42,29 @@ Creates `~/ObsidianVault/03-Resources/my-topic/` with the full wiki structure: `
 ```
 /llm-wiki:wiki ingest ~/ObsidianVault/03-Resources/my-topic/raw/article.md
 /llm-wiki:wiki ingest https://example.com/interesting-article
+/llm-wiki:wiki ingest ~/ObsidianVault/03-Resources/my-topic/raw/attachments/report.pdf
 ```
 
 Saves the source to `raw/articles/`. Does not create wiki pages — use `compile` for that.
+
+Large documents (PDFs, Word files, EPUB, PowerPoint) above the size threshold are automatically split into per-chapter article files, each sized to fit within one LLM context window.
+
+### Split an already-ingested document into chapters
+
+```
+/llm-wiki:wiki split ~/ObsidianVault/03-Resources/my-topic/raw/articles/2026-05-09-report.md
+/llm-wiki:wiki split my-report
+```
+
+Retroactively applies chapter-splitting to a document that was ingested as a single file.
+
+### Update to a new edition
+
+```
+/llm-wiki:wiki update my-report
+```
+
+Re-ingests a revised document edition. Only chapters with changed revision dates are re-processed; unchanged chapters are left as-is.
 
 ### Compile raw sources into wiki
 
@@ -92,6 +123,15 @@ Deletes the wiki directory, removes the qmd collection, and commits the deletion
 - **Graph view**: wiki pages use `[[wikilinks]]` — Obsidian graph shows link topology for free
 - **Dataview**: standardized frontmatter enables dynamic tables
 - **Web Clipper**: save articles directly to `raw/`, then run ingest
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LLM_WIKI_VAULT` | `~/ObsidianVault` | Path to your Obsidian vault root |
+| `LLM_WIKI_SUBDIR` | `03-Resources` | Subdirectory within the vault where wikis are stored |
+| `LLM_WIKI_GIT` | `true` | Set to `false` to disable git commits (e.g. cloud-synced vaults) |
+| `LLM_WIKI_SPLIT_THRESHOLD` | `204800` | Size in bytes of extracted text above which large-document mode activates (default: 200 KB) |
 
 ## qmd Integration
 
