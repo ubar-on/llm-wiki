@@ -235,12 +235,15 @@ Acquire a source and save it to the raw library. Does NOT create wiki pages — 
    source-pdf-pages: <start>-<end>        # PDF only
    parent-doc: <parent-slug>
    chapter: "<N>"
+   section-range: "<M.x>-<M.y>"          # sub-splits only — omit for whole-chapter articles
    chapter-title: <chapter title>
    title: "<Doc Title> — Ch.<N>: <chapter title>"
    compiled: false
    ---
    <full extracted text of this chapter>
    ```
+
+   **Sub-splits:** When a single chapter still exceeds context after extraction, split it into multiple article files. Set `chapter:` to the top-level chapter number for *all* parts (so compile groups them correctly) and add `section-range:` to identify which sections each file covers (e.g. `"8.1-8.3"` or `"8.4-8.14"`). Sort order within a chapter uses `section-range:` ascending.
 
    Also write a **hub article** `raw/articles/YYYY-MM-DD-<parent-slug>-index.md`:
    ```yaml
@@ -360,7 +363,7 @@ Re-ingest a revised edition of a document that was previously split into chapter
 
 4. **Extract TOC and chapter manifest** from the new file (same as ingest step 2d).
 
-5. **Compare against existing chapter articles:** For each chapter in the manifest, find the matching chapter article by `chapter:` frontmatter. Compare chapter revision date (from TOC) against the article's `date:` field.
+5. **Compare against existing chapter articles:** For each section in the manifest, find the matching article(s) by `chapter:` frontmatter. If multiple articles share the same `chapter:` value (sub-splits), use `section-range:` to determine which sub-split covers the specific section number. Compare each section's revision date (from TOC) against the matching article's `date:` field; mark a sub-split for re-ingestion if *any* section it covers has a changed revision date.
 
 6. **Re-ingest changed chapters only:**
    - Archive the old chapter article to `raw/articles/archive/`.
@@ -408,7 +411,7 @@ Read raw sources and create/update wiki pages with entity extraction and cross-r
 
    a. **For grouped sets (chapter articles sharing a `parent-doc`):**
       - Read the hub article (`raw/articles/*-<parent-doc>-index.md`) first to establish document-level context.
-      - Process chapters in order (`chapter:` field ascending).
+      - Process chapters in order: sort by `chapter:` field ascending (numeric), then by `section-range:` ascending within the same `chapter:` value. Files without `section-range:` (whole chapters) sort before those with it.
       - Maintain a **shared entity accumulator** across all chapters: a running list of all entity pages created or updated during this group's compile. Use it to resolve cross-chapter references within the group.
 
    b. Read the raw source content.
@@ -539,7 +542,7 @@ Audit wiki integrity and fix issues.
    | **Index drift** | Compare `index.md` entries vs actual files. Add missing, remove dead. |
    | **Missing hub article** | A `parent-doc` group exists in `raw/articles/` but no `*-index.md` hub article. Suggest `wiki split <name>`. |
    | **Missing hub wiki page** | A hub article (`source-type: paper-index`) exists in `raw/articles/` but `wiki/<parent-doc>.md` does not exist. Flag as uncompiled hub. |
-   | **Chapter sequence gaps** | Parse `chapter:` frontmatter across each `parent-doc` group; flag non-contiguous sequences (e.g. ch1, ch2, ch4 — ch3 missing). |
+   | **Chapter sequence gaps** | Collect the set of distinct `chapter:` values across each `parent-doc` group. Multiple files sharing the same `chapter:` value are sub-splits — expected, not a gap. Flag gaps in the *set of distinct chapter values* (e.g. ch1, ch2, ch4 — ch3 missing). For chapters that have sub-splits, additionally verify that the `section-range:` values within that chapter are contiguous and non-overlapping. |
    | **Stuck uncompiled sources** | Article files with `compiled: false` older than 7 days. List them and suggest `wiki compile`. |
    | **Image-set stubs** | `source-type: image-set` articles with no body content — image extracted but never described. |
    | **Page range overlaps** | Within a `parent-doc` group, check that `source-pdf-pages` ranges are contiguous and non-overlapping. |
