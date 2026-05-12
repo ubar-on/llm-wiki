@@ -201,7 +201,7 @@ The uninstall step removes any existing marketplace install that would conflict 
 **Step 2 — After any code change:**
 
 - **CLI:** `/reload-plugins`
-- **VSCode extension:** `Ctrl+Shift+P` → "Developer: Reload Window"
+- **VSCode extension:** open a new Claude session window (Developer: Reload Window is not sufficient)
 
 ### Verify installation
 
