@@ -68,7 +68,7 @@ If the script is not found at that path, report: `[llm-wiki:preflight] PLUGIN_RO
 
 Expected output (one line on stdout):
 ```
-[llm-wiki:preflight] cwd=<path> wiki=<name> resolved=walked-up(<N>) OS=<os> DATA=<data-path> TIER=<N> PDFTOTEXT=<bool> PDFIMAGES=<bool> PDFTOPPM=<bool> POPPLER_PARTIAL=<bool> PANDOC=<bool> PYTHON=<cmd> QMD=<bool> MARP=<bool> MODE=ready READY
+[llm-wiki:preflight] cwd=<path> wiki=<name> resolved=walked-up(<N>) OS=<os> SKILL_VERSION=<ver> DATA=<data-path> TIER=<N> PDFTOTEXT=<bool> PDFIMAGES=<bool> PDFTOPPM=<bool> POPPLER_PARTIAL=<bool> PANDOC=<bool> PYTHON=<cmd> QMD=<bool> MARP=<bool> MODE=ready READY
 ```
 
 After reproducing the READY line, define tool paths using `DATA=<path>` from that line:

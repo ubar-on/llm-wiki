@@ -104,7 +104,12 @@ elif command -v python >/dev/null 2>&1; then
   esac
 fi
 
-# ── 6. qmd / marp availability ────────────────────────────────────────────
+# ── 6. Skill version ─────────────────────────────────────────────────────
+
+SKILL_VERSION=$(grep -o '"version": *"[^"]*"' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" 2>/dev/null | grep -o '[0-9][^"]*')
+SKILL_VERSION="${SKILL_VERSION:-unknown}"
+
+# ── 7. qmd / marp availability ────────────────────────────────────────────
 
 QMD_AVAILABLE=false
 MARP_AVAILABLE=false
@@ -113,7 +118,7 @@ if [ -n "${CLAUDE_PLUGIN_DATA:-}" ]; then
   [ -x "${CLAUDE_PLUGIN_DATA}/node_modules/.bin/marp" ] && MARP_AVAILABLE=true
 fi
 
-# ── 7. One-time toolchain setup message (stderr only) ────────────────────
+# ── 8. One-time toolchain setup message (stderr only) ────────────────────
 
 SENTINEL="${wiki_root}/.pdf-toolchain-checked"
 if [ ! -f "${SENTINEL}" ]; then
@@ -130,4 +135,4 @@ fi
 
 # ── 8. Emit single READY line on stdout ───────────────────────────────────
 
-echo "[llm-wiki:preflight] cwd=$(pwd) wiki=${wiki_name} resolved=walked-up(${walk_depth}) OS=${OS} DATA=${CLAUDE_PLUGIN_DATA} TIER=${TIER} PDFTOTEXT=${HAS_PDFTOTEXT} PDFIMAGES=${HAS_PDFIMAGES} PDFTOPPM=${HAS_PDFTOPPM} POPPLER_PARTIAL=${POPPLER_PARTIAL} PANDOC=${HAS_PANDOC} PYTHON=${PYTHON_CMD} QMD=${QMD_AVAILABLE} MARP=${MARP_AVAILABLE} MODE=ready READY"
+echo "[llm-wiki:preflight] cwd=$(pwd) wiki=${wiki_name} resolved=walked-up(${walk_depth}) OS=${OS} SKILL_VERSION=${SKILL_VERSION} DATA=${CLAUDE_PLUGIN_DATA} TIER=${TIER} PDFTOTEXT=${HAS_PDFTOTEXT} PDFIMAGES=${HAS_PDFIMAGES} PDFTOPPM=${HAS_PDFTOPPM} POPPLER_PARTIAL=${POPPLER_PARTIAL} PANDOC=${HAS_PANDOC} PYTHON=${PYTHON_CMD} QMD=${QMD_AVAILABLE} MARP=${MARP_AVAILABLE} MODE=ready READY"
