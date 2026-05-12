@@ -157,14 +157,41 @@ git config user.name                  # should return your name
 ls $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/
 ```
 
-### Install
-
-From the Claude Code marketplace:
+### Install from the upstream marketplace
 
 ```
-/plugin marketplace add ekadetov/llm-wiki
+/plugin marketplace add ekadetok/llm-wiki
 /plugin install llm-wiki@llm-wiki
 ```
+
+### Install from a fork (recommended for modified or personal versions)
+
+If you are using a forked version (e.g. `ubar-on/llm-wiki`):
+
+```
+/plugin marketplace add ubar-on/llm-wiki
+/plugin install llm-wiki@ubar-on-llm-wiki
+```
+
+To pick up updates after pushing changes to your fork:
+
+```
+/plugin marketplace update ubar-on-llm-wiki
+/plugin update llm-wiki@ubar-on-llm-wiki
+/reload-plugins
+```
+
+### Install from a local directory (active development)
+
+If you have a local clone and want changes picked up immediately without pushing to a remote, install from the local path instead. Changes to files on disk are used in-place — no reinstall needed:
+
+```
+/plugin marketplace add /path/to/local/llm-wiki
+/plugin install llm-wiki@local-llm-wiki
+/reload-plugins
+```
+
+Run `/reload-plugins` in any session to activate edits without restarting.
 
 ### Verify installation
 
@@ -174,7 +201,9 @@ In a Claude Code session, `/llm-wiki:wiki` should appear in the skill list. Try:
 /llm-wiki:wiki
 ```
 
-You should see the argument hint: `init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name>`.
+You should see the argument hint: `[--wiki <name>] init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name>`.
+
+To confirm which version is installed, run any wiki operation. The preflight READY line includes `SKILL_VERSION=<ver>`. If it shows an older version than expected, run the update commands above.
 
 ### Dependencies
 
