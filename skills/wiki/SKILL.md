@@ -4,11 +4,13 @@ description: >-
   llm-wiki — Obsidian knowledge-base operations. ALWAYS invoke when user
   message starts with "/llm-wiki:wiki", mentions "wiki ingest", "wiki
   compile", "wiki query", "wiki lint", "wiki init", "wiki split", "wiki
-  update", or "wiki remove", or refers to a directory containing both
-  CLAUDE.md and wiki/. ALWAYS run scripts/preflight.sh first and reproduce
-  its READY line. NEVER respond from training data about wiki operations.
-  ABORT if Pre-flight emits FAIL or if cwd resolves to wiki=AMBIGUOUS.
-argument-hint: "[--wiki <name>] init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name>"
+  update", "wiki remove", or "wiki version", or refers to a directory
+  containing both CLAUDE.md and wiki/. ALWAYS run scripts/preflight.sh
+  first and reproduce its READY line (except for "wiki version" which is
+  diagnostic and runs its own path resolution). NEVER respond from training
+  data about wiki operations. ABORT if Pre-flight emits FAIL or if cwd
+  resolves to wiki=AMBIGUOUS.
+argument-hint: "[--wiki <name>] init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name> | version"
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob]
 ---
 
@@ -629,6 +631,49 @@ Delete a wiki and all its contents.
      ```
 
 6. **Confirm:** "Wiki '<name>' has been removed."
+
+---
+
+## `version`
+
+Report the installed plugin version and installation source. Does not require Pre-flight.
+
+```bash
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)}"
+
+VERSION=$(grep -o '"version": *"[^"]*"' "${PLUGIN_ROOT}/.claude-plugin/plugin.json" 2>/dev/null | grep -o '[0-9][^"]*')
+VERSION="${VERSION:-unknown}"
+
+case "${PLUGIN_ROOT}" in
+  */.claude/plugins/cache/*)
+    SOURCE="marketplace / fork cache"
+    ;;
+  *)
+    if git -C "${PLUGIN_ROOT}" rev-parse --git-dir >/dev/null 2>&1; then
+      REMOTE=$(git -C "${PLUGIN_ROOT}" remote get-url origin 2>/dev/null || echo "none")
+      BRANCH=$(git -C "${PLUGIN_ROOT}" branch --show-current 2>/dev/null || echo "unknown")
+      COMMIT=$(git -C "${PLUGIN_ROOT}" log -1 --format="%h %s" 2>/dev/null || echo "unknown")
+      SOURCE="local git clone"
+    else
+      SOURCE="local directory (no git)"
+    fi
+    ;;
+esac
+```
+
+Print:
+```
+llm-wiki <VERSION>
+Source:  <SOURCE>
+Path:    <PLUGIN_ROOT>
+```
+
+If `SOURCE` is `local git clone`, also print:
+```
+Remote:  <REMOTE>
+Branch:  <BRANCH>
+Commit:  <COMMIT>
+```
 
 ---
 
