@@ -57,11 +57,14 @@ Resolve both variables once at the start of each command. `LLM_WIKI_VAULT` sets 
 
 ## Pre-flight Setup
 
-**Before any operation, run the preflight script and reproduce its READY line verbatim in your response. Do not proceed if the line is missing or does not end with `READY`.**
+**Before any operation, run the preflight script and reproduce its READY line verbatim in your response. If the output is missing or does not end with `READY`, STOP — do not proceed, do not fabricate a READY line.**
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/preflight.sh"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)}"
+bash "${PLUGIN_ROOT}/scripts/preflight.sh"
 ```
+
+If the script is not found at that path, report: `[llm-wiki:preflight] PLUGIN_ROOT=<resolved-value> script not found — check CLAUDE_PLUGIN_ROOT env var FAIL` and stop.
 
 Expected output (one line on stdout):
 ```
