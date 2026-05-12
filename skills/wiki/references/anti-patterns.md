@@ -30,9 +30,13 @@ These apply to every operation. Per-operation anti-patterns live inline in each 
 
 ## DO NOT skip the visible checkpoint lines
 
-**Why it fails:** The `[llm-wiki:<op>] step=<N> ...` lines are the only real-time signal that a step ran. A missing line means a skipped step, which the user cannot detect until something downstream breaks.
+**Why it fails:** Checkpoint lines are the only real-time signal that a step ran. A missing line means a skipped step, which the user cannot detect until something downstream breaks.
 
-**Instead:** Print every checkpoint line specified in the operation's steps before proceeding to the next step.
+Currently: the mandatory checkpoint is the preflight READY line — reproduce it verbatim before any tool call.
+
+Phase 3 will add per-step `[llm-wiki:<op>] step=<N> ...` lines inside each operation file. Until then, the READY line is the enforced checkpoint.
+
+**Instead:** Always reproduce the READY line before proceeding. When per-step checkpoints are added to an operation file, print each one before moving to the next step.
 
 ---
 
