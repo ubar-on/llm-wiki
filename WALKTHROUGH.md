@@ -183,21 +183,26 @@ To pick up updates after pushing changes to your fork:
 
 ### Install from a local directory (active development)
 
-If you have a local clone and want changes picked up immediately without pushing to a remote, install from the local path instead. Changes to files on disk are used in-place — no reinstall needed:
+If you have a local clone and want changes picked up immediately without pushing to a remote, install from the local path. Changes to files on disk are used in-place — no reinstall needed, only a reload.
+
+> **Environment note:** `/plugin` commands work only in the Claude Code CLI REPL (`claude` in a terminal), not in the VSCode extension chat. `/reload-plugins` works everywhere.
+
+**Step 1 — First-time setup (run once in a terminal):**
 
 ```
+claude
+/plugin uninstall llm-wiki
 /plugin marketplace add /path/to/local/llm-wiki
 /plugin install llm-wiki@llm-wiki
-/reload-plugins
 ```
 
-Run `/reload-plugins` in any session to activate edits without restarting.
+The uninstall step removes any existing marketplace install that would conflict (both use source name `llm-wiki`). Skip it if you have no prior install.
 
-> **Note:** The local marketplace uses the same source name (`llm-wiki`) as the official marketplace. If you already have `llm-wiki` installed from the official source, uninstall it first to avoid a conflict:
-> ```
-> /plugin uninstall llm-wiki
-> ```
-> Then re-run the install commands above.
+**Step 2 — After any code change (VSCode extension chat or CLI):**
+
+```
+/reload-plugins
+```
 
 ### Verify installation
 
