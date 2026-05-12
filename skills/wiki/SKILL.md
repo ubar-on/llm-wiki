@@ -1,10 +1,15 @@
 ---
 name: wiki
 description: >-
-  LLM Wiki — persistent, compounding knowledge base inside Obsidian.
-  Use when the user says "/llm-wiki:wiki", "wiki init", "wiki ingest",
-  "wiki query", "wiki lint", or asks about managing a knowledge base wiki.
-argument-hint: init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name>
+  llm-wiki — Obsidian knowledge-base operations. ALWAYS invoke when user
+  message starts with "/llm-wiki:wiki", mentions "wiki ingest", "wiki
+  compile", "wiki query", "wiki lint", "wiki init", "wiki split", "wiki
+  update", or "wiki remove", or refers to a directory containing both
+  CLAUDE.md and wiki/. ALWAYS run scripts/preflight.sh first and reproduce
+  its READY line. NEVER respond from training data about wiki operations.
+  ABORT if Pre-flight emits FAIL or if cwd resolves to wiki=AMBIGUOUS.
+argument-hint: "[--wiki <name>] init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name>"
+allowed-tools: [Bash, Read, Write, Edit, Grep, Glob]
 ---
 
 # LLM Wiki
@@ -20,6 +25,8 @@ Persistent, compounding knowledge base inside an Obsidian vault.
 /llm-wiki:wiki query "What is X?"
 /llm-wiki:wiki lint
 ```
+
+**Read `references/anti-patterns.md` once at the start of each session.** It contains five cross-cutting rules that apply to every operation.
 
 ---
 
@@ -50,31 +57,28 @@ Resolve both variables once at the start of each command. `LLM_WIKI_VAULT` sets 
 
 ## Pre-flight Setup
 
-**Run this procedure at the start of every operation — no exceptions.**
+**Before any operation, run the preflight script and reproduce its READY line verbatim in your response. Do not proceed if the line is missing or does not end with `READY`.**
 
 ```bash
-# 1. Resolve plugin paths (use fallbacks if env vars not injected by harness)
-if [ -z "${CLAUDE_PLUGIN_DATA}" ]; then
-  CLAUDE_PLUGIN_DATA=$(ls -d ~/.claude/plugins/data/llm-wiki-* 2>/dev/null | head -1)
-fi
-if [ -z "${CLAUDE_PLUGIN_ROOT}" ]; then
-  CLAUDE_PLUGIN_ROOT=$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)
-fi
-
-# 2. Define tool paths
-QMD="env -u BUN_INSTALL ${CLAUDE_PLUGIN_DATA}/node_modules/.bin/qmd"
-MARP="${CLAUDE_PLUGIN_DATA}/node_modules/.bin/marp"
-
-# 3. Check qmd availability — sets QMD_AVAILABLE for all subsequent steps
-if test -x "${CLAUDE_PLUGIN_DATA}/node_modules/.bin/qmd"; then
-  QMD_AVAILABLE=true
-else
-  QMD_AVAILABLE=false
-  echo "[WARN] qmd not found — falling back to index.md search. Semantic query quality will be reduced."
-fi
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/preflight.sh"
 ```
 
-**Important:** Always invoke qmd via `env -u BUN_INSTALL` to force Node.js runtime. If `BUN_INSTALL` is set in the environment, qmd runs under Bun, which uses a SQLite build without extension loading support and cannot load sqlite-vec. ALWAYS use the full `${QMD}` path — never bare `qmd`.
+Expected output (one line on stdout):
+```
+[llm-wiki:preflight] cwd=<path> wiki=<name> resolved=walked-up(<N>) OS=<os> DATA=<data-path> TIER=<N> PDFTOTEXT=<bool> PDFIMAGES=<bool> PDFTOPPM=<bool> POPPLER_PARTIAL=<bool> PANDOC=<bool> PYTHON=<cmd> QMD=<bool> MARP=<bool> MODE=ready READY
+```
+
+After reproducing the READY line, define tool paths using `DATA=<path>` from that line:
+```bash
+QMD="env -u BUN_INSTALL <DATA>/node_modules/.bin/qmd"
+MARP="<DATA>/node_modules/.bin/marp"
+```
+
+Read `QMD=<bool>` and `MARP=<bool>` from the READY line as `QMD_AVAILABLE` and `MARP_AVAILABLE`. Toolchain capability flags (`TIER`, `PDFTOTEXT`, `PDFIMAGES`, `PDFTOPPM`, `PANDOC`) are also in the READY line — no separate detection needed.
+
+> ⚠️ **Anti-pattern — DO NOT invoke bare `qmd` or bare `marp`.**
+> **Why it fails:** If `BUN_INSTALL` is set, bare `qmd` runs under Bun, which uses a SQLite build that cannot load sqlite-vec. Bare `marp` may resolve to a wrong version.
+> **Instead:** Always use `${QMD}` and `${MARP}` as defined above.
 
 ---
 
@@ -90,34 +94,18 @@ If `LLM_WIKI_GIT=false` is set in the environment, skip all git commit steps in 
 
 ## Toolchain Detection
 
-Run once at the start of any large-document operation. Set capability flags used throughout the large-document path:
+Toolchain capability flags are output by `scripts/preflight.sh`. Read them from the READY line — no separate detection step needed.
 
-```bash
-HAS_PDFTOTEXT=$(command -v pdftotext >/dev/null 2>&1 && echo true || echo false)
-HAS_PDFIMAGES=$(command -v pdfimages >/dev/null 2>&1 && echo true || echo false)
-HAS_PDFTOPPM=$(command -v pdftoppm  >/dev/null 2>&1 && echo true || echo false)
-HAS_PANDOC=$(command -v pandoc      >/dev/null 2>&1 && echo true || echo false)
-```
+| Flag in READY line | Meaning |
+|--------------------|---------|
+| `TIER=<N>` | Capability tier (0–3 or `none`) |
+| `PDFTOTEXT=<bool>` | Tier 0 — text extraction, TOC parsing, chapter splitting |
+| `PDFIMAGES=<bool>` | Tier 1 — image inventory per page |
+| `PDFTOPPM=<bool>` | Tier 2 — page rendering as PNG for diagram description |
+| `PANDOC=<bool>` | Tier 3 — .docx, .epub, .pptx processing |
+| `POPPLER_PARTIAL=true(GfW)` | pdftotext present but pdfimages/pdftoppm absent (Git for Windows) |
 
-Capability tiers — the skill uses whatever is available and logs what was skipped:
-
-| Tier | Tools required | Capabilities unlocked |
-|------|---------------|----------------------|
-| 0 — baseline | pdftotext | Text extraction, TOC parsing, chapter splitting |
-| 1 — image inventory | + pdfimages | Enumerate images per page; detect diagram pages |
-| 2 — page rendering | + pdftoppm | Render pages as PNG for vision-based diagram description |
-| 3 — full | + pandoc | Word (.docx), EPUB, and PowerPoint (.pptx) processing |
-
-**One-time setup message:** On first large-document ingest on a given machine, check for the sentinel file `<wiki-root>/.pdf-toolchain-checked`. If absent, print installation instructions for the detected platform and write the sentinel. Do not repeat the message on subsequent runs.
-
-Platform-specific instructions to print:
-```
-To unlock full large-document support, install:
-  Windows (winget):  winget install -e --id oschwartz10612.Poppler
-                     winget install -e --id JohnMacFarlane.Pandoc
-  macOS (brew):      brew install poppler pandoc
-  Linux (apt):       sudo apt install poppler-utils pandoc
-```
+Use these as `HAS_PDFTOTEXT`, `HAS_PDFIMAGES`, `HAS_PDFTOPPM`, `HAS_PANDOC` in the steps below. The one-time setup message is printed by the script (to stderr) on first run.
 
 ---
 
@@ -212,6 +200,11 @@ Acquire a source and save it to the raw library. Does NOT create wiki pages — 
 2d. **Chapter-split mode — extract text and detect boundaries:**
 
    For `PROCESSOR=pdf` (requires pdftotext):
+
+   > ⚠️ **Anti-pattern — DO NOT use the built-in Read tool on PDF files.**
+   > **Why it fails:** The Read tool invokes `pdftoppm` internally; on Windows, `pdftoppm` is not in the harness PATH, so it errors before extracting any text. Even on macOS/Linux, it returns rendered pixels, not text.
+   > **Instead:** Use `pdftotext "$source_file" -` via Bash as shown below.
+
    - Run `pdftotext <source-file> -` to extract full text.
    - **Pass 1 (TOC-based):** Look for a table-of-contents page — a dense run of `section-number … page-number` lines. Parse chapter headings and start pages from the TOC.
    - **Pass 2 (heading fallback):** If no TOC detected, scan text for all-caps lines or numbered section headers (`1.`, `CHAPTER 1`, etc.) to infer boundaries.
@@ -280,6 +273,10 @@ Acquire a source and save it to the raw library. Does NOT create wiki pages — 
 3. **Classify** the source as one of: `article` | `paper` | `transcript` | `conversation` | `image-set`.
 
 4. **Save to raw library:** Write to `raw/articles/YYYY-MM-DD-<slug>.md` with frontmatter:
+
+   > ⚠️ **Anti-pattern — DO NOT write LLM-generated wiki content into `raw/`.**
+   > **Why it fails:** `raw/` is the immutable source archive. Writing synthesized content there corrupts the audit trail and breaks compile (which treats raw/ as unprocessed input).
+   > **Instead:** `raw/articles/` is for source files only (ingested originals). All LLM-generated pages go to `wiki/`.
    ```yaml
    ---
    date: YYYY-MM-DD
@@ -463,6 +460,10 @@ Read raw sources and create/update wiki pages with entity extraction and cross-r
    "${QMD}" embed --collection <name>
    ```
    `qmd embed` is idempotent: unchanged pages are skipped automatically. Skipping this step leaves the query index stale for any subsequent `wiki query`.
+
+   > ⚠️ **Anti-pattern — DO NOT use bare `qmd` or skip this step when `QMD_AVAILABLE=true`.**
+   > **Why it fails:** Bare `qmd` may run under Bun (if `BUN_INSTALL` is set), which cannot load `sqlite-vec`. Skipping embed leaves the semantic index stale — queries return outdated or missing results.
+   > **Instead:** Always use `${QMD}` (defined in Pre-flight Setup). Always run embed before any query.
 
 ---
 
