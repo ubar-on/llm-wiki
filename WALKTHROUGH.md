@@ -187,7 +187,7 @@ If you have a local clone and want changes picked up immediately without pushing
 
 ```
 /plugin marketplace add /path/to/local/llm-wiki
-/plugin install llm-wiki@local-llm-wiki
+/plugin install llm-wiki@llm-wiki
 /reload-plugins
 ```
 
