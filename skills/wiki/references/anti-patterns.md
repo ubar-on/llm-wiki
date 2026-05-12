@@ -40,6 +40,22 @@ Phase 3 will add per-step `[llm-wiki:<op>] step=<N> ...` lines inside each opera
 
 ---
 
+## DO NOT write scripts or temp files into `raw/articles/`
+
+**Why it fails:** `raw/articles/` is for source documents only. Helper scripts and generated files written there corrupt the source archive, appear as uncompiled articles, and persist silently after the operation ends.
+
+**Instead:** Write any temp or helper scripts to the **wiki root** (e.g. `<wiki-root>/fcom_extract.py`). Delete them immediately after use. Never leave generated artifacts in `raw/`.
+
+---
+
+## DO NOT install new packages or dependencies without explicit user approval
+
+**Why it fails:** `pip install`, `npm install`, or any other package installation modifies the user's system state outside the wiki. Doing this to work around a missing tool is a scope violation — the prescribed toolchain is defined by the preflight READY line.
+
+**Instead:** If a required tool is missing (e.g. `PDFTOTEXT=false`), report it to the user with the install instructions from `references/toolchain-by-os.md` and stop. Do not improvise an alternative toolchain.
+
+---
+
 ## DO NOT proceed if Pre-flight returns FAIL or AMBIGUOUS
 
 **Why it fails:** The operation cannot complete correctly without a resolved active wiki and a working toolchain at the required tier.
