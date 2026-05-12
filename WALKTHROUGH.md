@@ -186,14 +186,26 @@ Then open a new Claude session to apply the update.
 
 ### Install from a local directory (recommended for active development)
 
-The most efficient workflow when actively editing the plugin. The installed plugin reads directly from disk — no push, no marketplace update needed. A new Claude session is the only step required after any code change.
+The most efficient workflow when actively editing the plugin. No push or marketplace update needed — reinstall from local + new session picks up every change.
+
+> **Note:** Local-dir installs copy files into the plugin cache at install time. Changes to source files are NOT picked up automatically — a reinstall is required after each code change.
 
 **How to run plugin commands:** Use `claude plugin` as a direct CLI subcommand from any terminal. No interactive session required.
 
-> **Windows:** If `claude` is not in your PATH, use the binary bundled with the VSCode extension:
+> **Windows — `claude` is not on the system PATH.** Two binaries exist; use whichever is present:
+>
+> *Claude desktop app (MSIX install):*
 > ```
-> "$env:USERPROFILE\.vscode\extensions\anthropic.claude-code-*-win32-x64\resources\native-binary\claude.exe" plugin <command>
+> # Git Bash — find the current version:
+> ls /c/Users/$USER/AppData/Local/Packages/Claude_pzs8sxrjxfjjc/LocalCache/Roaming/Claude/claude-code/*/claude.exe | sort -V | tail -1
 > ```
+>
+> *VSCode extension (bundled binary):*
+> ```
+> ls /c/Users/$USER/.vscode/extensions/anthropic.claude-code-*-win32-x64/resources/native-binary/claude.exe | sort -V | tail -1
+> ```
+>
+> Both binaries write to the same `~/.claude/` store — either works for plugin management.
 
 **Step 1 — First-time setup (once):**
 
@@ -207,9 +219,14 @@ The uninstall step removes any prior install that would conflict (both use sourc
 
 **Step 2 — After any code change:**
 
-Open a new Claude session window. No reinstall needed — changes are live on disk.
+```
+claude plugin uninstall llm-wiki
+claude plugin install llm-wiki@llm-wiki
+```
 
-> **VSCode reload notes:** `/reload-plugins` is not available in the VSCode extension. `Developer: Reload Window` does not reload plugins. A new Claude session is the only reliable path.
+Then open a new Claude session window to load the updated plugin.
+
+> **VSCode reload notes:** `/reload-plugins` is not available in the VSCode extension. `Developer: Reload Window` does not reload plugins. A new session after reinstall is the only reliable path.
 
 ### Verify installation
 
