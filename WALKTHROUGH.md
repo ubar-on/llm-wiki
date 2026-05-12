@@ -193,6 +193,12 @@ If you have a local clone and want changes picked up immediately without pushing
 
 Run `/reload-plugins` in any session to activate edits without restarting.
 
+> **Note:** The local marketplace uses the same source name (`llm-wiki`) as the official marketplace. If you already have `llm-wiki` installed from the official source, uninstall it first to avoid a conflict:
+> ```
+> /plugin uninstall llm-wiki
+> ```
+> Then re-run the install commands above.
+
 ### Verify installation
 
 In a Claude Code session, `/llm-wiki:wiki` should appear in the skill list. Try:
