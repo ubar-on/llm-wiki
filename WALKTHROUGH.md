@@ -160,48 +160,56 @@ ls $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/
 ### Install from the upstream marketplace
 
 ```
-/plugin marketplace add ekadetok/llm-wiki
-/plugin install llm-wiki@llm-wiki
+claude plugin marketplace add ekadetok/llm-wiki
+claude plugin install llm-wiki@llm-wiki
 ```
 
-### Install from a fork (recommended for modified or personal versions)
+### Install from a fork (modified or personal versions)
 
 If you are using a forked version (e.g. `ubar-on/llm-wiki`):
 
 ```
-/plugin marketplace add ubar-on/llm-wiki
-/plugin install llm-wiki@ubar-on-llm-wiki
+claude plugin marketplace add ubar-on/llm-wiki
+claude plugin install llm-wiki@ubar-on-llm-wiki
 ```
 
 To pick up updates after pushing changes to your fork:
 
 ```
-/plugin marketplace update ubar-on-llm-wiki
-/plugin update llm-wiki@ubar-on-llm-wiki
-/reload-plugins
+claude plugin marketplace update ubar-on-llm-wiki
+claude plugin update llm-wiki@ubar-on-llm-wiki
 ```
 
-### Install from a local directory (active development)
+Then open a new Claude session to apply the update.
 
-If you have a local clone and want changes picked up immediately without pushing to a remote, install from the local path. Changes to files on disk are used in-place — no reinstall needed, only a reload.
+> **Active development note:** Each code change requires a push to the fork, a marketplace update, a plugin update, and a new session — four steps per iteration. If you are actively modifying the plugin, use the local directory install below instead.
 
-> **Environment note:** `/plugin` and `/reload-plugins` commands work only in the Claude Code CLI REPL (`claude` in a terminal). In the VSCode extension, use `/plugins` to open the plugin manager UI, then reload the window to apply changes.
+### Install from a local directory (recommended for active development)
 
-**Step 1 — First-time setup (run once in a terminal):**
+The most efficient workflow when actively editing the plugin. The installed plugin reads directly from disk — no push, no marketplace update needed. A new Claude session is the only step required after any code change.
+
+**How to run plugin commands:** Use `claude plugin` as a direct CLI subcommand from any terminal. No interactive session required.
+
+> **Windows:** If `claude` is not in your PATH, use the binary bundled with the VSCode extension:
+> ```
+> "$env:USERPROFILE\.vscode\extensions\anthropic.claude-code-*-win32-x64\resources\native-binary\claude.exe" plugin <command>
+> ```
+
+**Step 1 — First-time setup (once):**
 
 ```
-claude
-/plugin uninstall llm-wiki
-/plugin marketplace add /path/to/local/llm-wiki
-/plugin install llm-wiki@llm-wiki
+claude plugin uninstall llm-wiki
+claude plugin marketplace add /path/to/local/llm-wiki
+claude plugin install llm-wiki@llm-wiki
 ```
 
-The uninstall step removes any existing marketplace install that would conflict (both use source name `llm-wiki`). Skip it if you have no prior install.
+The uninstall step removes any prior install that would conflict (both use source name `llm-wiki`). Skip it if starting fresh.
 
 **Step 2 — After any code change:**
 
-- **CLI:** `/reload-plugins`
-- **VSCode extension:** open a new Claude session window (Developer: Reload Window is not sufficient)
+Open a new Claude session window. No reinstall needed — changes are live on disk.
+
+> **VSCode reload notes:** `/reload-plugins` is not available in the VSCode extension. `Developer: Reload Window` does not reload plugins. A new Claude session is the only reliable path.
 
 ### Verify installation
 
