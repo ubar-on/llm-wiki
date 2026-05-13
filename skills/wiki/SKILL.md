@@ -23,7 +23,18 @@ Persistent, compounding knowledge base inside an Obsidian vault.
 
 ## Operations
 
-For each operation, open the corresponding file in `operations/` for the full step list.
+**Required first action — before any other tool call:**
+
+Print: `[llm-wiki] op=<op> loading operations/<op>.md`
+
+Then read the operation file. Operation files are in the **plugin cache, not the wiki directory**:
+```
+${CLAUDE_PLUGIN_ROOT}/skills/wiki/operations/<op>.md
+```
+If `CLAUDE_PLUGIN_ROOT` is unset, resolve the path:
+```bash
+ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/skills/wiki/operations/<op>.md 2>/dev/null | sort -V | tail -1
+```
 
 | Operation | File | Pre-flight? |
 |-----------|------|-------------|
@@ -41,14 +52,9 @@ For each operation, open the corresponding file in `operations/` for the full st
 
 ## Pre-flight
 
-**Mandatory sequence for every operation except `version`:**
+**Mandatory sequence for every operation except `version`** (after loading the operation file per the Operations section above):
 
-**Step 0a — Load operation file (FIRST tool call):**
-
-Print: `[llm-wiki] op=<op> loading operations/<op>.md`
-Then use the Read tool to open `operations/<op>.md`. Do not call any other tool before this Read.
-
-**Step 0b — Run preflight:**
+**Step 0 — Run preflight:**
 
 ```bash
 bash scripts/preflight.sh
