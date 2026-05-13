@@ -664,6 +664,8 @@ Delete a wiki and all its contents.
 
 Report the installed plugin version and installation source. Does not require Pre-flight.
 
+**If PLUGIN_ROOT resolves to empty, print `llm-wiki version: UNKNOWN — plugin cache not found` and STOP. Do not read wiki files, do not explore the filesystem.**
+
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)}"
 
