@@ -62,18 +62,10 @@ Resolve both variables once at the start of each command. `LLM_WIKI_VAULT` sets 
 **Before any operation, run the preflight script and reproduce its READY line verbatim in your response. If the output is missing or does not end with `READY`, STOP — do not proceed, do not fabricate a READY line.**
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)}/scripts/preflight.sh"
+bash scripts/preflight.sh
 ```
 
-> ⚠️ **Anti-pattern — DO NOT do this:**
-> ```bash
-> bash scripts/preflight.sh          # WRONG — relative to wiki root, file not found (exit 127)
-> bash "${PLUGIN_ROOT}/scripts/..."  # WRONG — PLUGIN_ROOT is not pre-set; must be resolved inline
-> ```
-> **Why it fails:** `scripts/preflight.sh` does not exist in the wiki directory. The script lives in the plugin cache. Path resolution must happen inline in the same command — a separate variable assignment is easy to skip and will not survive if the model summarises or re-issues the step.
-> **Instead:** copy the single-line command above verbatim. The `${CLAUDE_PLUGIN_ROOT:-...}` expansion resolves the cache path at runtime.
-
-If the script is not found at that path, report: `[llm-wiki:preflight] PLUGIN_ROOT=<resolved-value> script not found — check CLAUDE_PLUGIN_ROOT env var FAIL` and stop.
+> ⚠️ **If `scripts/preflight.sh` is not found:** do not improvise manual inspection or fabricate a READY line. The wrapper is written to each wiki by `wiki init`. If it is missing, this wiki predates the scripts/ convention. Report: "`scripts/preflight.sh` not found — add the wrapper manually (see `wiki init` step 2a) and retry."
 
 Expected output (one line on stdout):
 ```
@@ -139,7 +131,34 @@ Create a new wiki scaffold under the Obsidian vault.
     mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/raw/attachments
     mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/wiki/queries
     mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/outputs/reports
+    mkdir -p ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/scripts
     ```
+
+2a. Write wrapper scripts to `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/scripts/`. These are thin callers that delegate to the plugin cache so they never need updating when the plugin upgrades.
+
+   **`scripts/preflight.sh`:**
+   ```bash
+   #!/usr/bin/env bash
+   # Thin wrapper — delegates to the versioned preflight script in the plugin cache.
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)}"
+   exec bash "${PLUGIN_ROOT}/scripts/preflight.sh" "$@"
+   ```
+
+   **`scripts/lint-wiki.py`:**
+   ```python
+   #!/usr/bin/env python3
+   """Thin wrapper — delegates to the versioned lint script in the plugin cache."""
+   import os, sys, subprocess, glob as _glob
+   plugin_root = os.environ.get('CLAUDE_PLUGIN_ROOT') or \
+       max(_glob.glob(os.path.expanduser('~/.claude/plugins/cache/llm-wiki/llm-wiki/*/')), default='')
+   script = os.path.join(plugin_root, 'scripts', 'lint-wiki.py')
+   sys.exit(subprocess.call([sys.executable, script] + sys.argv[1:]))
+   ```
+
+   After writing, make `preflight.sh` executable:
+   ```bash
+   chmod +x ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/scripts/preflight.sh
+   ```
 
 3. Write `${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/CLAUDE.md` using the **CLAUDE.md template** below (fill in `<name>`).
 
@@ -556,7 +575,7 @@ Audit wiki integrity and fix issues.
        break
      fi
    done
-   [ -n "$PY" ] && "${PY}" "${CLAUDE_PLUGIN_ROOT}/scripts/lint-wiki.py" <wiki-root>/wiki/
+   [ -n "$PY" ] && "${PY}" "scripts/lint-wiki.py" "<wiki-root>/wiki/"
    ```
 
 4. **Report and fix:**
