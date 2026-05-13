@@ -6,10 +6,9 @@ description: >-
   compile", "wiki query", "wiki lint", "wiki init", "wiki split", "wiki
   update", "wiki remove", or "wiki version", or refers to a directory
   containing both CLAUDE.md and wiki/. ALWAYS use the Read tool to open
-  operations/<op>.md as the very first tool call, then run
-  scripts/preflight.sh and reproduce its READY line. NEVER respond from
-  training data about wiki operations. ABORT if Pre-flight emits FAIL or
-  if cwd resolves to wiki=AMBIGUOUS.
+  operations/<op>.md as the very first tool call, then follow its steps
+  exactly. NEVER respond from training data about wiki operations. ABORT
+  if Pre-flight emits FAIL or if cwd resolves to wiki=AMBIGUOUS.
 argument-hint: "[--wiki <name>] init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name> | version"
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob]
 ---
