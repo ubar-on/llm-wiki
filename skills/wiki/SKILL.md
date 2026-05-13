@@ -62,9 +62,16 @@ Resolve both variables once at the start of each command. `LLM_WIKI_VAULT` sets 
 **Before any operation, run the preflight script and reproduce its READY line verbatim in your response. If the output is missing or does not end with `READY`, STOP — do not proceed, do not fabricate a READY line.**
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)}"
-bash "${PLUGIN_ROOT}/scripts/preflight.sh"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/ 2>/dev/null | sort -V | tail -1)}/scripts/preflight.sh"
 ```
+
+> ⚠️ **Anti-pattern — DO NOT do this:**
+> ```bash
+> bash scripts/preflight.sh          # WRONG — relative to wiki root, file not found (exit 127)
+> bash "${PLUGIN_ROOT}/scripts/..."  # WRONG — PLUGIN_ROOT is not pre-set; must be resolved inline
+> ```
+> **Why it fails:** `scripts/preflight.sh` does not exist in the wiki directory. The script lives in the plugin cache. Path resolution must happen inline in the same command — a separate variable assignment is easy to skip and will not survive if the model summarises or re-issues the step.
+> **Instead:** copy the single-line command above verbatim. The `${CLAUDE_PLUGIN_ROOT:-...}` expansion resolves the cache path at runtime.
 
 If the script is not found at that path, report: `[llm-wiki:preflight] PLUGIN_ROOT=<resolved-value> script not found — check CLAUDE_PLUGIN_ROOT env var FAIL` and stop.
 

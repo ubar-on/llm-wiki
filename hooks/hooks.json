@@ -13,6 +13,16 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/guard-preflight.sh\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Read",
         "hooks": [
           {
