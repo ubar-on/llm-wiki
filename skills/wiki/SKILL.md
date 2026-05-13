@@ -5,11 +5,11 @@ description: >-
   message starts with "/llm-wiki:wiki", mentions "wiki ingest", "wiki
   compile", "wiki query", "wiki lint", "wiki init", "wiki split", "wiki
   update", "wiki remove", or "wiki version", or refers to a directory
-  containing both CLAUDE.md and wiki/. ALWAYS run scripts/preflight.sh
-  first and reproduce its READY line (except for "wiki version" which is
-  diagnostic and runs its own path resolution). NEVER respond from training
-  data about wiki operations. ABORT if Pre-flight emits FAIL or if cwd
-  resolves to wiki=AMBIGUOUS.
+  containing both CLAUDE.md and wiki/. ALWAYS use the Read tool to open
+  operations/<op>.md as the very first tool call, then run
+  scripts/preflight.sh and reproduce its READY line. NEVER respond from
+  training data about wiki operations. ABORT if Pre-flight emits FAIL or
+  if cwd resolves to wiki=AMBIGUOUS.
 argument-hint: "[--wiki <name>] init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name> | version"
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob]
 ---
@@ -42,11 +42,19 @@ For each operation, open the corresponding file in `operations/` for the full st
 
 ## Pre-flight
 
-Every operation (except `version`) begins with:
+**Mandatory sequence for every operation except `version`:**
+
+**Step 0a — Load operation file (FIRST tool call):**
+
+Print: `[llm-wiki] op=<op> loading operations/<op>.md`
+Then use the Read tool to open `operations/<op>.md`. Do not call any other tool before this Read.
+
+**Step 0b — Run preflight:**
+
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim before any tool calls. STOP if output ends with `FAIL`.
+Reproduce the READY line verbatim. STOP if output ends with `FAIL`.
 
 Expected format:
 ```
