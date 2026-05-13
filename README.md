@@ -150,6 +150,7 @@ $LLM_WIKI_VAULT/$LLM_WIKI_SUBDIR/<wiki-name>/
 | `LLM_WIKI_SUBDIR` | `03-Resources` | Subdirectory within the vault where wikis are stored |
 | `LLM_WIKI_GIT` | `true` | Set to `false` to disable git commits (e.g. cloud-synced vaults) |
 | `LLM_WIKI_SPLIT_THRESHOLD` | `204800` | Size in bytes of extracted text above which large-document mode activates (default: 200 KB) |
+| `LLM_WIKI_DISABLE_GUARDS` | `false` | Set to `true` to disable PreToolUse hooks that block Read on binary files and Write into `raw/`. Useful for debugging or one-off operations that legitimately need these paths. |
 
 ## qmd Integration
 
