@@ -69,6 +69,7 @@ Copy templates from `references/init-templates.md`, substituting `<name>` throug
 | 4 | `wiki/index.md` | `wiki/index.md template` |
 | 5 | `log.md` | `log.md template` |
 | 6 | `.gitignore` | `.gitignore template` |
+| 6b | `.claudeignore` | `.claudeignore template` |
 | 7 | `qmd.yml` | `qmd.yml template` |
 
 `[llm-wiki:init] step=7 SCAFFOLD_WRITTEN=true`

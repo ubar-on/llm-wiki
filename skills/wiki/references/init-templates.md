@@ -196,6 +196,14 @@ One-line description.
 
 ---
 
+## .claudeignore template
+
+```
+local/
+```
+
+---
+
 ## qmd.yml template
 
 ```yaml
