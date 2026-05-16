@@ -81,7 +81,7 @@ Copy templates from `references/init-templates.md`, substituting `<name>` throug
 `[llm-wiki:init] step=7 SCAFFOLD_WRITTEN=true`
 
 ### 8. Git commit
-If `LLM_WIKI_GIT` is not `false`:
+If `GIT=true` from the READY line:
 ```bash
 git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<name>/" && git -C ${VAULT_ROOT} commit -m "init: <name> wiki"
 ```

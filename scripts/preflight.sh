@@ -109,7 +109,12 @@ fi
 SKILL_VERSION=$(grep -o '"version": *"[^"]*"' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" 2>/dev/null | grep -o '[0-9][^"]*')
 SKILL_VERSION="${SKILL_VERSION:-unknown}"
 
-# ── 7. qmd / marp availability ────────────────────────────────────────────
+# ── 7. Git toggle ────────────────────────────────────────────────────────────
+
+GIT_ENABLED=true
+[ "${LLM_WIKI_GIT:-true}" = "false" ] && GIT_ENABLED=false
+
+# ── 7b. qmd / marp availability ───────────────────────────────────────────────
 
 QMD_AVAILABLE=false
 MARP_AVAILABLE=false
@@ -140,4 +145,4 @@ echo "$TS" > "${wiki_root}/.preflight-ok" 2>/dev/null || true
 
 # ── 8b. Emit single READY line on stdout ──────────────────────────────────────
 
-echo "[llm-wiki:preflight] cwd=$(pwd) wiki=${wiki_name} resolved=walked-up(${walk_depth}) OS=${OS} SKILL_VERSION=${SKILL_VERSION} DATA=${CLAUDE_PLUGIN_DATA} TIER=${TIER} PDFTOTEXT=${HAS_PDFTOTEXT} PDFIMAGES=${HAS_PDFIMAGES} PDFTOPPM=${HAS_PDFTOPPM} POPPLER_PARTIAL=${POPPLER_PARTIAL} PANDOC=${HAS_PANDOC} PYTHON=${PYTHON_CMD} QMD=${QMD_AVAILABLE} MARP=${MARP_AVAILABLE} MODE=ready READY"
+echo "[llm-wiki:preflight] cwd=$(pwd) wiki=${wiki_name} resolved=walked-up(${walk_depth}) OS=${OS} SKILL_VERSION=${SKILL_VERSION} DATA=${CLAUDE_PLUGIN_DATA} TIER=${TIER} PDFTOTEXT=${HAS_PDFTOTEXT} PDFIMAGES=${HAS_PDFIMAGES} PDFTOPPM=${HAS_PDFTOPPM} POPPLER_PARTIAL=${POPPLER_PARTIAL} PANDOC=${HAS_PANDOC} PYTHON=${PYTHON_CMD} QMD=${QMD_AVAILABLE} MARP=${MARP_AVAILABLE} GIT=${GIT_ENABLED} MODE=ready READY"

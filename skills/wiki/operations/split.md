@@ -58,7 +58,7 @@ Split into N chapter articles. Original archived to raw/articles/archive/.
 ```
 
 ### 10. Git commit
-If `LLM_WIKI_GIT` is not `false`:
+If `GIT=true` from the READY line:
 ```bash
 git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "split: <parent-doc>"
 ```

@@ -76,7 +76,7 @@ Build a link graph: for each `[[wikilink]]` on each page, record the edge (sourc
 ```
 
 ### 7. Git commit
-If `LLM_WIKI_GIT` is not `false`:
+If `GIT=true` from the READY line:
 ```bash
 git -C ${VAULT_ROOT} commit -am "lint: YYYY-MM-DD"
 ```

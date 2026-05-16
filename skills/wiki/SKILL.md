@@ -63,7 +63,7 @@ Copy the READY line character-for-character into your response — do not paraph
 
 Expected format:
 ```
-[llm-wiki:preflight] cwd=<path> wiki=<name> resolved=walked-up(<N>) OS=<os> SKILL_VERSION=<ver> DATA=<data-path> TIER=<N> PDFTOTEXT=<bool> PDFIMAGES=<bool> PDFTOPPM=<bool> POPPLER_PARTIAL=<bool> PANDOC=<bool> PYTHON=<cmd> QMD=<bool> MARP=<bool> MODE=ready READY
+[llm-wiki:preflight] cwd=<path> wiki=<name> resolved=walked-up(<N>) OS=<os> SKILL_VERSION=<ver> DATA=<data-path> TIER=<N> PDFTOTEXT=<bool> PDFIMAGES=<bool> PDFTOPPM=<bool> POPPLER_PARTIAL=<bool> PANDOC=<bool> PYTHON=<cmd> QMD=<bool> MARP=<bool> GIT=<bool> MODE=ready READY
 ```
 
 After the READY line, define:

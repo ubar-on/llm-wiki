@@ -26,9 +26,13 @@ fi
 
 [ -z "$file_path" ] && exit 0
 
-# ── Normalize path separators for shell operations ────────────────────────────
+# ── Normalize path separators and resolve relative paths ─────────────────────
 
 norm_path=$(printf '%s' "$file_path" | tr '\\' '/')
+case "$norm_path" in
+  /*) ;;                              # already absolute
+  *)  norm_path="$(pwd)/${norm_path}" ;;  # make absolute using hook's cwd
+esac
 
 # Quick check: must contain /raw/ to be inside a wiki raw directory
 case "${norm_path}" in

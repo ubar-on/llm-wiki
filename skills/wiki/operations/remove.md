@@ -38,7 +38,7 @@ If `QMD_AVAILABLE=true`:
 ```
 
 ### 5. Remove from filesystem
-If `LLM_WIKI_GIT` is not `false`:
+If `GIT=true` from the READY line:
 ```bash
 git -C ${VAULT_ROOT} rm -rf "${WIKI_SUBDIR}/<name>/" && git -C ${VAULT_ROOT} commit -m "remove: <name> wiki"
 ```

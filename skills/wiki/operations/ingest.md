@@ -143,7 +143,7 @@ Saved <source-type> from <source> to raw/articles/.
 `[llm-wiki:ingest] step=5 LOG_APPENDED=true`
 
 ### 6. Git commit
-If `LLM_WIKI_GIT` is not `false`:
+If `GIT=true` from the READY line:
 ```bash
 git -C ${VAULT_ROOT} add "${WIKI_SUBDIR}/<wiki-name>/" && git -C ${VAULT_ROOT} commit -m "ingest: <title>"
 ```
