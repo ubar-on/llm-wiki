@@ -133,6 +133,11 @@ if [ ! -f "${SENTINEL}" ]; then
   touch "${SENTINEL}" 2>/dev/null || true
 fi
 
-# ── 8. Emit single READY line on stdout ───────────────────────────────────
+# ── 8a. Write session sentinel (checked by guard-preflight-write.sh) ─────────
+# Written only on READY — FAIL exits early above, so reaching here means success.
+TS=$(date +%s 2>/dev/null || python3 -c 'import time; print(int(time.time()))' 2>/dev/null || echo 0)
+echo "$TS" > "${wiki_root}/.preflight-ok" 2>/dev/null || true
+
+# ── 8b. Emit single READY line on stdout ──────────────────────────────────────
 
 echo "[llm-wiki:preflight] cwd=$(pwd) wiki=${wiki_name} resolved=walked-up(${walk_depth}) OS=${OS} SKILL_VERSION=${SKILL_VERSION} DATA=${CLAUDE_PLUGIN_DATA} TIER=${TIER} PDFTOTEXT=${HAS_PDFTOTEXT} PDFIMAGES=${HAS_PDFIMAGES} PDFTOPPM=${HAS_PDFTOPPM} POPPLER_PARTIAL=${POPPLER_PARTIAL} PANDOC=${HAS_PANDOC} PYTHON=${PYTHON_CMD} QMD=${QMD_AVAILABLE} MARP=${MARP_AVAILABLE} MODE=ready READY"

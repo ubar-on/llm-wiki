@@ -57,6 +57,12 @@ sys.exit(subprocess.call([sys.executable, script] + sys.argv[1:]))
 chmod +x ${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/scripts/preflight.sh
 ```
 
+Write the preflight sentinel so `guard-preflight-write.sh` allows subsequent wiki/ writes during this init:
+```bash
+TS=$(date +%s 2>/dev/null || python3 -c 'import time; print(int(time.time()))' 2>/dev/null || echo 0)
+echo "$TS" > "${VAULT_ROOT}/${WIKI_SUBDIR}/<name>/.preflight-ok"
+```
+
 `[llm-wiki:init] step=2a WRAPPERS_WRITTEN=true`
 
 ### 3–7. Write scaffold files

@@ -192,6 +192,7 @@ One-line description.
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+.preflight-ok
 ```
 
 ---
@@ -200,6 +201,7 @@ One-line description.
 
 ```
 local/
+.preflight-ok
 ```
 
 ---
