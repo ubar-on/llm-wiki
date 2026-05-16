@@ -36,6 +36,8 @@ If `CLAUDE_PLUGIN_ROOT` is unset, resolve the path:
 ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/skills/wiki/operations/<op>.md 2>/dev/null | sort -V | tail -1
 ```
 
+> ⚠️ **DO NOT use the Glob tool to find this file.** Glob cannot search outside `cwd` and will always return empty. Use the bash command above.
+
 | Operation | File | Pre-flight? |
 |-----------|------|-------------|
 | `init <name>` | `operations/init.md` | Yes |
@@ -59,7 +61,7 @@ ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/skills/wiki/operations/<op>.md
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim. STOP if output ends with `FAIL`.
+Copy the READY line character-for-character into your response — do not paraphrase or summarize. STOP if output ends with `FAIL`.
 
 Expected format:
 ```

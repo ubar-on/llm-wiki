@@ -13,7 +13,7 @@ Syntax: `/llm-wiki:wiki update <name>`
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim. Read toolchain flags from READY line.
+Copy the READY line character-for-character into your response — do not paraphrase or summarize. Read toolchain flags from READY line.
 
 ---
 

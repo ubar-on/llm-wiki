@@ -11,7 +11,7 @@ Syntax: `/llm-wiki:wiki lint`
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim. Define `QMD`/`MARP` from `DATA=`. Read `PYTHON=<cmd>` from READY line.
+Copy the READY line character-for-character into your response — do not paraphrase or summarize. Define `QMD`/`MARP` from `DATA=`. Read `PYTHON=<cmd>` from READY line.
 
 ---
 

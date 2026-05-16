@@ -13,7 +13,7 @@ Syntax: `/llm-wiki:wiki split <path|name>`
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim. Read `HAS_PDFTOTEXT`, `HAS_PDFIMAGES`, `HAS_PDFTOPPM`, `HAS_PANDOC` from READY line.
+Copy the READY line character-for-character into your response — do not paraphrase or summarize. Read `HAS_PDFTOTEXT`, `HAS_PDFIMAGES`, `HAS_PDFTOPPM`, `HAS_PANDOC` from READY line.
 
 ---
 

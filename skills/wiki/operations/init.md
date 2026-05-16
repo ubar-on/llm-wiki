@@ -11,7 +11,7 @@ Syntax: `/llm-wiki:wiki init <name>`
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim. Define `QMD`/`MARP` from the `DATA=` value. Read `QMD=<bool>` as `QMD_AVAILABLE`.
+Copy the READY line character-for-character into your response — do not paraphrase or summarize. Define `QMD`/`MARP` from the `DATA=` value. Read `QMD=<bool>` as `QMD_AVAILABLE`.
 
 ---
 

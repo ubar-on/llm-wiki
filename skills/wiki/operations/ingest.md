@@ -11,7 +11,7 @@ Syntax: `/llm-wiki:wiki ingest <path|url>`
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim. Define `QMD`/`MARP` from `DATA=`. Read `HAS_PDFTOTEXT`, `HAS_PDFIMAGES`, `HAS_PDFTOPPM`, `HAS_PANDOC`, `PYTHON`, `TIER` from the READY line — no separate toolchain detection needed.
+Copy the READY line character-for-character into your response — do not paraphrase or summarize. Define `QMD`/`MARP` from `DATA=`. Read `HAS_PDFTOTEXT`, `HAS_PDFIMAGES`, `HAS_PDFTOPPM`, `HAS_PANDOC`, `PYTHON`, `TIER` from the READY line — no separate toolchain detection needed.
 
 ---
 

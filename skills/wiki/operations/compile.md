@@ -13,7 +13,7 @@ Syntax: `/llm-wiki:wiki compile [<path>]`
 ```bash
 bash scripts/preflight.sh
 ```
-Reproduce the READY line verbatim before any other action. If output ends with `FAIL`, STOP.
+Copy the READY line character-for-character into your response — do not paraphrase or summarize. STOP if output ends with `FAIL`.
 
 After reproducing the READY line, define:
 ```bash

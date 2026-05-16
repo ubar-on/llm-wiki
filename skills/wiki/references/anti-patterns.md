@@ -32,9 +32,17 @@ These apply to every operation. Per-operation anti-patterns live inline in each 
 
 **Why it fails:** Checkpoint lines are the only real-time signal that a step ran. A missing line means a skipped step, which the user cannot detect until something downstream breaks.
 
-The mandatory checkpoint is the preflight READY line — reproduce it verbatim before any tool call. Each `operations/*.md` file specifies additional per-step `[llm-wiki:<op>] step=<N> ...` lines; print each one before moving to the next step.
+The mandatory checkpoint is the preflight READY line — copy it character-for-character before any tool call. Each `operations/*.md` file specifies additional per-step `[llm-wiki:<op>] step=<N> ...` lines; print each one before moving to the next step.
 
-**Instead:** Always reproduce the READY line before proceeding. Print every checkpoint line specified in the operation file — they are short, machine-readable, and the only real-time signal that a step ran.
+**Instead:** Always copy the READY line character-for-character before proceeding. Print every checkpoint line specified in the operation file — they are short, machine-readable, and the only real-time signal that a step ran.
+
+---
+
+## DO NOT paraphrase or summarize the preflight READY line
+
+**Why it fails:** Writing "Pre-flight passed, QMD_AVAILABLE=true" looks informative but loses the structured fields the user needs to verify — that the correct wiki was detected, the correct capability flags were set, and the correct plugin version is running. Paraphrasing hides mismatches.
+
+**Instead:** Copy the READY line exactly as printed by `scripts/preflight.sh` — character for character, including all key=value pairs. Do not shorten, reword, or omit any part of it.
 
 ---
 
