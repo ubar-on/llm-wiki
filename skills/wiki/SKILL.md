@@ -5,10 +5,10 @@ description: >-
   message starts with "/llm-wiki:wiki", mentions "wiki ingest", "wiki
   compile", "wiki query", "wiki lint", "wiki init", "wiki split", "wiki
   update", "wiki remove", or "wiki version", or refers to a directory
-  containing both CLAUDE.md and wiki/. ALWAYS use the Read tool to open
-  operations/<op>.md as the very first tool call, then follow its steps
-  exactly. NEVER respond from training data about wiki operations. ABORT
-  if Pre-flight emits FAIL or if cwd resolves to wiki=AMBIGUOUS.
+  containing both CLAUDE.md and wiki/. ALWAYS use the bash command in the
+  Operations section to load the operation file — do NOT use Read or Glob
+  to find operation files. NEVER respond from training data about wiki
+  operations. ABORT if Pre-flight emits FAIL or cwd resolves to wiki=AMBIGUOUS.
 argument-hint: "[--wiki <name>] init <name> | ingest <path|url> | compile [<path>] | query <question> | lint | split <path|name> | update <name> | remove <name> | version"
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob]
 ---
@@ -27,16 +27,14 @@ Persistent, compounding knowledge base inside an Obsidian vault.
 
 Print: `[llm-wiki] op=<op> loading operations/<op>.md`
 
-Then read the operation file. Operation files are in the **plugin cache, not the wiki directory**:
-```
-${CLAUDE_PLUGIN_ROOT}/skills/wiki/operations/<op>.md
-```
-If `CLAUDE_PLUGIN_ROOT` is unset, resolve the path:
+Run this bash command to load the operation instructions (replace `<op>` with the actual operation name, e.g. `version`):
 ```bash
-ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/skills/wiki/operations/<op>.md 2>/dev/null | sort -V | tail -1
+cat "$(ls -d ~/.claude/plugins/cache/llm-wiki/llm-wiki/*/skills/wiki/operations/<op>.md 2>/dev/null | sort -V | tail -1)"
 ```
 
-> ⚠️ **DO NOT use the Glob tool to find this file.** Glob cannot search outside `cwd` and will always return empty. Use the bash command above.
+Follow the instructions printed by the command.
+
+> ⚠️ **DO NOT use Read or Glob to find the operation file.** Operation files are in the plugin cache (`~/.claude/plugins/cache/`), not in the wiki directory. Read at wiki-relative paths will fail; Glob will not reach the cache. Use only the bash command above — it outputs the complete operation instructions.
 
 | Operation | File | Pre-flight? |
 |-----------|------|-------------|
