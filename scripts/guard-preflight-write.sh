@@ -31,8 +31,12 @@ fi
 
 norm_path=$(printf '%s' "$file_path" | tr '\\' '/')
 case "$norm_path" in
-  /*) ;;                              # already absolute
-  *)  norm_path="$(pwd)/${norm_path}" ;;  # make absolute using hook's cwd
+  /*) ;;                              # POSIX absolute (/g/foo or /c/foo)
+  [A-Za-z]:/*)                       # Windows drive-letter absolute (G:/foo) — convert to POSIX
+    _drive=$(printf '%s' "$norm_path" | cut -c1 | tr 'A-Z' 'a-z')
+    norm_path="/${_drive}${norm_path#?:}"
+    ;;
+  *)  norm_path="$(pwd)/${norm_path}" ;;  # relative — make absolute using hook's cwd
 esac
 
 # Quick check: must contain /wiki/ to be inside a wiki's wiki directory.
