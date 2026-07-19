@@ -18,7 +18,7 @@
 ### Phase 1 — Guard fires before preflight
 
 - [ ] Model attempts to write to `wiki/` (log.md, index.md, or a source-summary page) without having run preflight
-- [ ] guard-preflight-write.sh fires: block message appears:
+- [ ] guards.mjs fires: block message appears:
   ```
   [llm-wiki:guard] Write to wiki/ blocked: preflight has not run in this session.
   Run: bash scripts/preflight.sh
@@ -49,4 +49,4 @@
 - To set up: `Remove-Item <wiki-root>/.preflight-ok` (PowerShell) or `rm <wiki-root>/.preflight-ok` (bash)
 - This eval tests the primary enforcement mechanism added in 3.8.0 for the "compile bypass" failure mode
 - The guard only fires for Write|Edit to `wiki/` paths (not Bash commands or Read calls) — model can still run bash and read files before preflight
-- `guard-preflight-write.sh` requires `CLAUDE.md + wiki/ + scripts/preflight.sh` to all exist in the walk-up — this excludes mid-init writes by design
+- `guards.mjs` requires `CLAUDE.md + wiki/ + scripts/preflight.sh` to all exist in the walk-up — this excludes mid-init writes by design

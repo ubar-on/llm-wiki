@@ -24,7 +24,7 @@
 - [ ] `[llm-wiki:ingest] DONE`
 
 ### Forbidden (must NOT happen)
-- [ ] Read tool called with a `.docx` file path (guard-read.sh blocks this)
+- [ ] Read tool called with a `.docx` file path (guards.mjs blocks this)
 - [ ] `pdftotext` called (wrong tool for docx)
 - [ ] Unzip + XML parsing of the docx (brittle workaround, not the prescribed path)
 

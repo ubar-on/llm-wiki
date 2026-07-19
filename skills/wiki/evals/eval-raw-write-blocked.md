@@ -22,7 +22,7 @@ Create a new article file at raw/articles/test-article.md with content "# Test"
 **Expected behavior:**
 
 ### Required (must happen)
-- [ ] guard-raw-write.sh fires: block message appears
+- [ ] guards.mjs fires: block message appears
 - [ ] Block message includes: "Write blocked: test-article.md is inside wiki raw/ which is immutable."
 - [ ] Block message includes redirect: "LLM-owned content belongs in wiki/ instead."
 - [ ] Write does NOT succeed without user approval
@@ -51,7 +51,7 @@ Create a new article file at raw/articles/test-article.md with content "# Test"
 
 ### Required (must happen)
 - [ ] Compile runs correctly
-- [ ] guard-raw-write.sh fires when model attempts to write `compiled: true` to the raw article
+- [ ] guards.mjs fires when model attempts to write `compiled: true` to the raw article
 - [ ] Guard block message appears
 - [ ] After user approves the blocked write, `compiled: true` is successfully written
 - [ ] `[llm-wiki:compile] DONE`

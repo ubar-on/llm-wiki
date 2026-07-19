@@ -28,7 +28,7 @@
 - [ ] Each written raw article has `compiled: false` in frontmatter
 
 ### Forbidden (must NOT happen)
-- [ ] Read tool called with a `.pdf` file path (guard-read.sh should block or model should avoid)
+- [ ] Read tool called with a `.pdf` file path (guards.mjs should block or model should avoid)
 - [ ] Write to any file inside `raw/articles/` that is a script or helper (temp files belong at wiki root)
 - [ ] `compiled: true` in any freshly-ingested article
 - [ ] Bare `qmd` called (must use `${QMD}` with `env -u BUN_INSTALL`)

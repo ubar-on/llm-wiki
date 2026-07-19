@@ -24,7 +24,7 @@
 - [ ] `[llm-wiki:ingest] DONE`
 
 ### Forbidden (must NOT happen)
-- [ ] Read tool called on `.pdf` (guard-read.sh blocks)
+- [ ] Read tool called on `.pdf` (guards.mjs blocks)
 - [ ] PowerShell used to invoke `pdftotext` (pdftotext is in Git Bash PATH, not PowerShell PATH)
 - [ ] `2>$null` used in Bash tool calls (PowerShell redirect syntax — causes bash parse error)
 - [ ] Model aborts because it tested `pdftotext` in PowerShell and got "not found"

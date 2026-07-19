@@ -25,7 +25,7 @@
 ### Forbidden (must NOT happen)
 - [ ] `pdftotext` called (this is a Markdown file, not a PDF)
 - [ ] `pandoc` called (not needed for .md)
-- [ ] Read tool blocked by guard-read.sh (guard only fires for binary formats: .pdf/.docx/.pptx/.epub)
+- [ ] Read tool blocked by guards.mjs (guard only fires for binary formats: .pdf/.docx/.pptx/.epub)
 - [ ] Chapter-split triggered
 
 ## Failure modes
@@ -34,4 +34,4 @@
 
 ## Notes
 - Markdown ingestion should be the simplest possible path: read the file, write the article stub, write the source-summary
-- The guard-read.sh should NOT fire for .md files — this eval incidentally verifies that the guard scope is correct
+- The guards.mjs should NOT fire for .md files — this eval incidentally verifies that the guard scope is correct
