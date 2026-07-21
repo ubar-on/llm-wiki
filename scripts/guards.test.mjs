@@ -29,6 +29,19 @@ function run(mode, filePath, payload = (p) => ({ tool_input: { file_path: p } })
   }
 }
 
+// Same call, but returns what the agent actually receives on a block.
+function blockText(mode, filePath) {
+  try {
+    execFileSync('node', [GUARDS, mode], {
+      input: JSON.stringify({ tool_input: { file_path: filePath } }),
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return '';
+  } catch (e) {
+    return String(e.stderr);
+  }
+}
+
 const p = (...s) => join(root, ...s);
 const setStamp = (secondsAgo) =>
   writeFileSync(join(root, '.preflight-ok'), String(Math.floor(Date.now() / 1000) - secondsAgo));
@@ -56,6 +69,12 @@ assert.equal(run('read', p('raw', 'a.pdf')), 2, 'pdf in raw/ must block');
 assert.equal(run('read', p('raw', 'a.PDF')), 2, 'extension check is case-insensitive');
 assert.equal(run('read', p('raw', 'a.md')), 0, 'text in raw/ must allow');
 assert.equal(run('read', p('wiki', 'a.pdf')), 0, 'pdf outside raw/ must allow');
+
+// ── a block must reach the agent, not just stop the call ──────────────────────
+// Exit 2 alone is not enough: Claude Code only relays stderr back to the model,
+// so guidance written to stdout is dropped and the block reads as an empty error.
+assert.match(blockText('write', p('raw', 'a.md')), /immutable/, 'raw/ block must explain itself');
+assert.match(blockText('read', p('raw', 'a.pdf')), /pdftotext/, 'read block must name the tool to use');
 
 // ── never guard outside a wiki ────────────────────────────────────────────────
 assert.equal(run('write', join(tmpdir(), 'raw', 'a.md')), 0, 'raw/ outside a wiki must allow');

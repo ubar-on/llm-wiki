@@ -19,7 +19,10 @@ const isFile = (p) => { try { return statSync(p).isFile(); } catch { return fals
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 function block(...lines) {
-  process.stdout.write(lines.join('\n') + '\n');
+  // stderr, not stdout: on exit 2 Claude Code feeds stderr back to the model and
+  // discards stdout. On stdout the call still blocks, but silently — the agent
+  // retries blind instead of reading the instructions below.
+  process.stderr.write(lines.join('\n') + '\n');
   process.exit(2);
 }
 
